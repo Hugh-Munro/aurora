@@ -1,0 +1,12 @@
+name: optimisations
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pdfplumber
+  - openpyxl
+  - python-dotenv
+  - yfinance
+  - pandas
+prefix: C:\Users\hugom\miniconda3\envs\optimisations
