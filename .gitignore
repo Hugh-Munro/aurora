@@ -2,6 +2,5 @@ __pycache__/
 .ipynb_checkpoints/
 *.pyc
 .env
-data/
 archive/
 strava_tokens.json
