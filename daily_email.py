@@ -9,7 +9,6 @@ from html import escape as html_escape
 from pathlib import Path
 
 from openpyxl import load_workbook
-
 import portfolio_report  # <- your script: portfolio_report.py
 from daily_tasks import create_daily_tasks_file
 from weekly_tasks import create_weekly_tasks_file
