@@ -25,9 +25,7 @@ warnings.filterwarnings(
     module=r"openpyxl\.worksheet\._reader",
 )
 
-PASSAGES_FOLDER = Path(
-    r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Arts\Books\Passages"
-)
+PASSAGES_FOLDER = Path(__file__).resolve().parent / "data" / "books"
 PDF_PATTERN = "Passages - *.pdf"
 RECURSIVE = False
 GAP_MULTIPLIER = 1.8
@@ -36,13 +34,8 @@ GAP_MULTIPLIER = 1.8
 #     r"C:\Users\hugom\OneDrive\Desktop\Root\Organisation\Daily Tasks\Daily_Tasks_TEMPLATE.xlsx"
 # )
 
-WEEKLY_TASKS_TEMPLATE = Path(
-    r"C:\Users\hugom\OneDrive\Desktop\Root\Organisation\Weekly Tasks\Weekly_Tasks_TEMPLATE.xlsx"
-)
-
-TRAINING_PLAN_PATH = Path(
-    r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Fitness\Exercise\Training Plan.xlsx"
-)
+WEEKLY_TASKS_TEMPLATE = Path(__file__).resolve().parent / "data" / "Weekly_Tasks_TEMPLATE.xlsx"
+TRAINING_PLAN_PATH = Path(__file__).resolve().parent / "data" / "Training_Plan.xlsx"
 
 # Python weekday(): Monday=0 ... Saturday=5 ... Sunday=6
 SATURDAY = 5
