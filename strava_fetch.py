@@ -11,8 +11,8 @@ load_dotenv()
 
 CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
 CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
-TOKEN_FILE = "strava_tokens.json"
-OUTPUT_PATH = r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Fitness\Running\strava_activities.csv"
+STRAVA_TOKEN_FILE = "strava_tokens.json"
+OUTPUT_PATH = "data/strava_activities.csv"
 
 def get_tokens_via_browser():
     import json
@@ -35,22 +35,28 @@ def get_tokens_via_browser():
         "grant_type": "authorization_code",
     })
     tokens = response.json()
-    with open(TOKEN_FILE, "w") as f:
+    with open(STRAVA_TOKEN_FILE, "w") as f:
         json.dump(tokens, f)
     print("Tokens saved.")
     return tokens
 
 def load_tokens():
     import json
-    if not os.path.exists(TOKEN_FILE):
-        return get_tokens_via_browser()
-    with open(TOKEN_FILE) as f:
+    # GitHub Actions: use environment variable
+    refresh_token = os.getenv("STRAVA_REFRESH_TOKEN")
+    if refresh_token:
+        return {
+            "access_token": None,
+            "refresh_token": refresh_token,
+            "expires_at": 0,  # force refresh
+        }
+    # Local: use token file
+    with open(STRAVA_TOKEN_FILE) as f:
         return json.load(f)
 
 def refresh_if_needed(tokens):
     import json
     if tokens["expires_at"] < time.time():
-        print("Refreshing token...")
         response = requests.post("https://www.strava.com/oauth/token", data={
             "client_id": CLIENT_ID,
             "client_secret": CLIENT_SECRET,
@@ -58,8 +64,10 @@ def refresh_if_needed(tokens):
             "refresh_token": tokens["refresh_token"],
         })
         tokens = response.json()
-        with open(TOKEN_FILE, "w") as f:
-            json.dump(tokens, f)
+        # Only save to file when running locally
+        if not os.getenv("STRAVA_REFRESH_TOKEN"):
+            with open(STRAVA_TOKEN_FILE, "w") as f:
+                json.dump(tokens, f)
     return tokens
 
 def get_activities(access_token, days=14):
