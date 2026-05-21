@@ -25,7 +25,7 @@ warnings.filterwarnings(
     module=r"openpyxl\.worksheet\._reader",
 )
 
-PASSAGES_FOLDER = Path(__file__).resolve().parent / "data" / "books"
+PASSAGES_FOLDER = Path(__file__).resolve().parent / "data" / "passages"
 PDF_PATTERN = "Passages - *.pdf"
 RECURSIVE = False
 GAP_MULTIPLIER = 1.8
