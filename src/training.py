@@ -21,7 +21,7 @@ def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
 def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     if row is None:
         plain = "No session planned for today."
-        html = "<p style='color: var(--color-text-secondary); font-size: 14px;'>No session planned for today.</p>"
+        html = "<p style='font-size:14px; color:#666;'>No session planned for today.</p>"
         return plain, html
 
     session_type = row.get("session_type", "").lower()
@@ -42,15 +42,21 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
         f"border-radius:20px; letter-spacing:0.04em; {pill_style}'>{pill_label}</span>"
     )
 
-    header_html = f"""
-<div style='display:flex; align-items:center; gap:10px; margin-bottom:1rem;'>
-  {pill_html}
-  <h2 style='font-size:16px; font-weight:500; margin:0; color:var(--color-text-primary);'>{session_name}</h2>
-  <span style='font-size:13px; color:var(--color-text-tertiary); margin-left:auto;'>{location}</span>
-</div>"""
+    header_html = (
+        "<div style='display:flex; align-items:center; gap:12px; margin-bottom:16px;'>"
+        f"{pill_html}"
+        f"<span style='font-size:16px; font-weight:500; color:#1a1a1a; margin-left:4px;'>{session_name}</span>"
+        f"<span style='font-size:13px; color:#888; margin-left:auto;'>{location}</span>"
+        "</div>"
+    )
 
-    card_open = "<div style='background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:12px; padding:1.25rem; margin-bottom:1rem;'>"
-    card_close = "</div>"
+    card_style = (
+        "background:#ffffff; "
+        "border:1px solid #e0e0e0; "
+        "border-radius:12px; "
+        "padding:20px; "
+        "margin-bottom:16px;"
+    )
 
     if session_type == "run":
         distance = row.get("distance_km", "")
@@ -58,20 +64,27 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
         hr_zone = row.get("target_hr_zone", "")
 
         def metric_card(label, value):
-            return f"""
-<div style='background:var(--color-background-secondary); border-radius:8px; padding:10px 12px;'>
-  <p style='font-size:11px; color:var(--color-text-tertiary); margin:0 0 2px 0; letter-spacing:0.04em;'>{label}</p>
-  <p style='font-size:18px; font-weight:500; margin:0; color:var(--color-text-primary);'>{value}</p>
-</div>"""
+            return (
+                "<td style='width:33%; padding-right:8px;'>"
+                "<div style='background:#f7f7f5; border-radius:8px; padding:10px 12px;'>"
+                f"<p style='font-size:11px; color:#888; margin:0 0 4px 0; letter-spacing:0.04em;'>{label}</p>"
+                f"<p style='font-size:18px; font-weight:500; margin:0; color:#1a1a1a;'>{value}</p>"
+                "</div>"
+                "</td>"
+            )
 
-        metrics_html = f"""
-<div style='display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1rem;'>
-  {metric_card("DISTANCE", f"{distance} km") if distance else ""}
-  {metric_card("TARGET PACE", pace) if pace else ""}
-  {metric_card("HR ZONE", hr_zone) if hr_zone else ""}
-</div>"""
+        metrics_html = (
+            "<table style='width:100%; border-collapse:collapse; margin-bottom:16px;'><tr>"
+            + (metric_card("DISTANCE", f"{distance} km") if distance else "")
+            + (metric_card("TARGET PACE", pace) if pace else "")
+            + (metric_card("HR ZONE", hr_zone) if hr_zone else "")
+            + "</tr></table>"
+        )
 
-        notes_html = f"<p style='font-size:13px; color:var(--color-text-secondary); margin:0; border-left:2px solid var(--color-border-tertiary); padding-left:10px;'>{details}</p>" if details else ""
+        notes_html = (
+            f"<p style='font-size:13px; color:#555; margin:0; "
+            f"border-left:2px solid #e0e0e0; padding-left:10px;'>{details}</p>"
+        ) if details else ""
 
         body_html = metrics_html + notes_html
         plain = f"{session_name} ({location})\nDistance: {distance}km | Pace: {pace} | Zone: {hr_zone}\n{details}"
@@ -96,19 +109,21 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
                 ex_name = name_sets
                 sets_reps = ""
             display_right = f"{sets_reps} {weight}".strip()
-            rows_html += f"""
-<div style='display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:var(--color-background-secondary); border-radius:8px;'>
-  <span style='font-size:13px; color:var(--color-text-primary);'>{ex_name}</span>
-  <span style='font-size:13px; color:var(--color-text-secondary); font-weight:500;'>{display_right}</span>
-</div>"""
+            rows_html += (
+                "<tr>"
+                f"<td style='font-size:13px; color:#1a1a1a; padding:8px 10px; background:#f7f7f5; border-radius:6px;'>{ex_name}</td>"
+                f"<td style='font-size:13px; color:#666; font-weight:500; padding:8px 10px; text-align:right; background:#f7f7f5; border-radius:6px;'>{display_right}</td>"
+                "</tr>"
+                "<tr><td colspan='2' style='height:4px;'></td></tr>"
+            )
             plain_lines.append(f"  {ex_name} {display_right}")
 
-        body_html = f"<div style='display:flex; flex-direction:column; gap:6px;'>{rows_html}</div>"
+        body_html = f"<table style='width:100%; border-collapse:separate; border-spacing:0 4px;'>{rows_html}</table>"
         plain = "\n".join(plain_lines)
 
     else:
-        body_html = f"<p style='font-size:13px; color:var(--color-text-secondary); margin:0;'>{details}</p>" if details else ""
+        body_html = f"<p style='font-size:13px; color:#555; margin:0;'>{details}</p>" if details else ""
         plain = f"{session_name} ({location})\n{details}"
 
-    html = card_open + header_html + body_html + card_close
+    html = f"<div style='{card_style}'>{header_html}{body_html}</div>"
     return plain, html
