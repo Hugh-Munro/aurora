@@ -293,7 +293,11 @@ def main() -> int:
         "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Workout</h2>"
     )
     html_parts.append(workout_html)
-
+    
+    html_parts.append(
+    "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Quote</h2>"
+    )
+    
     html_parts.append(
         "<blockquote style='margin:0 0 8px 0; padding-left:12px; "
         "border-left:3px solid #ddd;'>"
