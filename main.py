@@ -259,6 +259,7 @@ def main() -> int:
     # ---- Workout ----
     plan_row = get_today_plan()
     workout_plain, workout_html = format_plan_for_email(plan_row)
+
     # ---- Quote ----
     q = pick_random_quote(
         PASSAGES_FOLDER,
@@ -272,6 +273,7 @@ def main() -> int:
     today_str = date.today().strftime("%a %d %b %Y")
     subject = f"Daily Update: {today_str}"
 
+    # Plain text
     lines: list[str] = []
     lines.append(subject)
     lines.append("")
@@ -283,32 +285,37 @@ def main() -> int:
     lines.append(f"— {q.author}, {q.title}" if q.author else f"— {q.title}")
     body_text = "\n".join(lines)
 
+    # HTML
     html_parts: list[str] = []
-    html_parts.append("<div style='font-family:Segoe UI, Arial, sans-serif;'>")
+    html_parts.append("<div style='max-width:600px; margin:0 auto; padding:1rem; font-family:Arial,sans-serif;'>")
+
+    # Header
     html_parts.append(
-        f"<h1 style='margin:0 0 16px 0; font-size:25px; line-height:1.2;'>"
-        f"{html_escape(subject)}</h1>"
+        "<div style='border-left:3px solid #0F6E56; padding-left:1rem; margin-bottom:2rem;'>"
+        "<p style='font-size:12px; color:#888; margin:0 0 2px 0; letter-spacing:0.08em; text-transform:uppercase;'>Daily Update</p>"
+        f"<h1 style='font-size:22px; font-weight:500; margin:0; color:#1a1a1a;'>{html_escape(subject)}</h1>"
+        "</div>"
     )
-    html_parts.append(
-        "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Workout</h2>"
-    )
+
+    # Workout
     html_parts.append(workout_html)
-    
+
+    # Quote
     html_parts.append(
-    "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Quote</h2>"
+        "<div style='background:#ffffff; border:0.5px solid #e0e0e0; border-radius:12px; padding:1.25rem;'>"
+        "<p style='font-size:11px; color:#888; margin:0 0 10px 0; letter-spacing:0.08em; text-transform:uppercase;'>Quote</p>"
+        "<blockquote style='margin:0 0 10px 0; padding-left:14px; border-left:2px solid #0F6E56;'>"
+        f"<p style='font-family:Georgia,serif; font-size:15px; line-height:1.7; margin:0; font-style:italic; color:#1a1a1a;'>{html_escape(pretty)}</p>"
+        "</blockquote>"
     )
-    
     html_parts.append(
-        "<blockquote style='margin:0 0 8px 0; padding-left:12px; "
-        "border-left:3px solid #ddd;'>"
-        f"{html_escape(pretty)}</blockquote>"
-    )
-    html_parts.append(
-        f"<div>— {html_escape(q.author)}, {html_escape(q.title)}</div>"
+        f"<p style='font-size:13px; color:#888; margin:0;'>— {html_escape(q.author)}, <em>{html_escape(q.title)}</em></p>"
         if q.author
-        else f"<div>— {html_escape(q.title)}</div>"
+        else f"<p style='font-size:13px; color:#888; margin:0;'>— <em>{html_escape(q.title)}</em></p>"
     )
     html_parts.append("</div>")
+    html_parts.append("</div>")
+
     body_html = "\n".join(html_parts)
 
     # ---- Send daily update ----
@@ -330,7 +337,7 @@ def main() -> int:
     mean_text = make_insult()
     mean_subject = f"Mean Message: {today_str}"
     mean_html = (
-        "<div style='font-family:Segoe UI, Arial, sans-serif;'>"
+        "<div style='font-family:Arial,sans-serif;'>"
         f"<p style='margin:0; font-size:16px;'>{html_escape(mean_text)}</p>"
         "</div>"
     )
