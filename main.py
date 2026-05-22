@@ -259,6 +259,11 @@ def main() -> int:
     # ---- Workout ----
     plan_row = get_today_plan()
     workout_plain, workout_html = format_plan_for_email(plan_row)
+    
+    # ---- Weather ----
+    location = plan_row.get("location", "dublin") if plan_row else "dublin"
+    from src.training import get_weather
+    weather_str = get_weather(location)
 
     # ---- Quote ----
     q = pick_random_quote(
@@ -289,12 +294,39 @@ def main() -> int:
     html_parts: list[str] = []
     html_parts.append("<div style='max-width:600px; margin:0 auto; padding:1rem; font-family:Arial,sans-serif;'>")
 
-    # Header
+    WEATHER_ICONS = {
+        "Clear sky": "☀️", "Mainly clear": "🌤️", "Partly cloudy": "⛅",
+        "Overcast": "☁️", "Foggy": "🌫️", "Icy fog": "🌫️",
+        "Light drizzle": "🌦️", "Drizzle": "🌧️", "Heavy drizzle": "🌧️",
+        "Light rain": "🌦️", "Rain": "🌧️", "Heavy rain": "🌧️",
+        "Light snow": "🌨️", "Snow": "❄️", "Heavy snow": "❄️",
+        "Light showers": "🌦️", "Showers": "🌧️", "Heavy showers": "⛈️",
+        "Thunderstorm": "⛈️", "Mixed conditions": "🌥️",
+    }
+
+    weather_icon = ""
+    if weather_str:
+        for desc, icon in WEATHER_ICONS.items():
+            if weather_str.startswith(desc):
+                weather_icon = icon
+                break
+
     html_parts.append(
-        "<div style='border-left:3px solid #0F6E56; padding-left:1rem; margin-bottom:2rem;'>"
+        "<table style='width:100%; border-collapse:collapse; margin-bottom:2rem;'><tr>"
+        "<td style='vertical-align:bottom;'>"
+        "<div style='border-left:3px solid #0F6E56; padding-left:1rem;'>"
         "<p style='font-size:12px; color:#888; margin:0 0 2px 0; letter-spacing:0.08em; text-transform:uppercase;'>Daily Update</p>"
         f"<h1 style='font-size:22px; font-weight:500; margin:0; color:#1a1a1a;'>{html_escape(subject)}</h1>"
         "</div>"
+        "</td>"
+        + (
+            "<td style='vertical-align:bottom; text-align:right; width:140px;'>"
+            f"<span style='font-size:22px; line-height:1; display:block;'>{weather_icon}</span>"
+            f"<p style='font-size:12px; color:#555; margin:4px 0 0 0; white-space:nowrap;'>{html_escape(weather_str.replace(' — ', ', '))}</p>"
+            "</td>"
+            if weather_str else ""
+        )
+        + "</tr></table>"
     )
 
     # Workout

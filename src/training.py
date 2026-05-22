@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 from datetime import date
 from pathlib import Path
-
+import requests
 
 PLAN_PATH = Path(__file__).resolve().parent.parent / "data" / "training_plan.csv"
 
@@ -17,6 +17,47 @@ def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
                 return row
     return None
 
+def get_weather(location: str) -> str:
+    """Fetch today's weather for Dublin or Waterford. Returns a formatted string."""
+    coords = {
+        "dublin": (53.3498, -6.2603),
+        "waterford": (52.2593, -7.1101),
+        "holiday": (53.3498, -6.2603),  # fallback to dublin
+    }
+    lat, lon = coords.get(location.lower(), (53.3498, -6.2603))
+    try:
+        resp = requests.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
+                "timezone": "Europe/Dublin",
+                "forecast_days": 1,
+            },
+            timeout=5,
+        )
+        data = resp.json()
+        daily = data["daily"]
+        max_temp = round(daily["temperature_2m_max"][0])
+        min_temp = round(daily["temperature_2m_min"][0])
+        precip = daily["precipitation_sum"][0]
+        code = daily["weathercode"][0]
+
+        WMO_CODES = {
+            0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+            45: "Foggy", 48: "Icy fog",
+            51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+            61: "Light rain", 63: "Rain", 65: "Heavy rain",
+            71: "Light snow", 73: "Snow", 75: "Heavy snow",
+            80: "Light showers", 81: "Showers", 82: "Heavy showers",
+            95: "Thunderstorm",
+        }
+        description = WMO_CODES.get(code, "Mixed conditions")
+        rain_str = f", {precip}mm rain" if precip > 0.2 else ""
+        return f"{description} — {min_temp}–{max_temp}°C{rain_str}"
+    except Exception:
+        return ""
 
 def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     if row is None:
@@ -30,12 +71,24 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     location = row.get("location", "").capitalize()
 
     PILL_STYLES = {
-        "run": ("background:#E1F5EE; color:#0F6E56;", "RUN"),
-        "gym": ("background:#F1EFE8; color:#444441;", "GYM"),
-        "bodyweight": ("background:#FAEEDA; color:#633806;", "BODYWEIGHT"),
-        "rest": ("background:#D3D1C7; color:#2C2C2A;", "REST"),
-    }
-    pill_style, pill_label = PILL_STYLES.get(session_type, ("background:#F1EFE8; color:#444441;", session_type.upper()))
+            "run": {
+                "easy run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - EASY"),
+                "long easy run": ("background:#E1F5EE; color:#0F6E56;", "RUN - LONG"),
+                "interval run":  ("background:#FAEEDA; color:#633806;", "RUN - INTERVALS"),
+                "threshold run": ("background:#FAC775; color:#412402;", "RUN - THRESHOLD"),
+                "default":       ("background:#E1F5EE; color:#0F6E56;", "RUN"),
+            },
+            "gym":        ("background:#F1EFE8; color:#444441;", "GYM"),
+            "bodyweight": ("background:#E1F5EE; color:#085041;", "BODYWEIGHT"),
+            "rest":       ("background:#D3D1C7; color:#2C2C2A;", "REST"),
+        }
+
+    session_name_lower = session_name.lower()
+    if session_type == "run":
+        run_styles = PILL_STYLES["run"]
+        pill_style, pill_label = run_styles.get(session_name_lower, run_styles["default"])
+    else:
+        pill_style, pill_label = PILL_STYLES.get(session_type, ("background:#F1EFE8; color:#444441;", session_type.upper()))
 
     pill_html = (
         f"<span style='font-size:11px; font-weight:500; padding:3px 10px; "
