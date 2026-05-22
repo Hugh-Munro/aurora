@@ -1,157 +1,94 @@
 import os
 import time
+from __future__ import annotations
 import csv
-from datetime import datetime, timedelta
-from urllib.parse import urlencode
-import requests
-from dotenv import load_dotenv
-from google import genai
+from datetime import date
+from pathlib import Path
 
-load_dotenv()
 
-# Paths
-STRAVA_TOKEN_FILE = "strava_tokens.json"
-TRAINING_LOG_PATH = r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Fitness\training\training_log.csv"
-TARGETS_PATH = r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Fitness\training\training_targets.csv"
+PLAN_PATH = Path(__file__).resolve().parent.parent / "data" / "training_plan.csv"
 
-CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
-CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# --- Strava ---
+def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
+    today = date.today().isoformat()
+    with open(plan_path, newline="", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["date"] == today:
+                return row
+    return None
 
-def load_tokens():
-    import json
-    with open(STRAVA_TOKEN_FILE) as f:
-        return json.load(f)
 
-def refresh_if_needed(tokens):
-    import json
-    if tokens["expires_at"] < time.time():
-        response = requests.post("https://www.strava.com/oauth/token", data={
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "grant_type": "refresh_token",
-            "refresh_token": tokens["refresh_token"],
-        })
-        tokens = response.json()
-        with open(STRAVA_TOKEN_FILE, "w") as f:
-            json.dump(tokens, f)
-    return tokens
+def format_plan_for_email(row: dict | None) -> tuple[str, str]:
+    """Returns (plain_text, html) for today's session."""
 
-def get_strava_activities(access_token, days=7):
-    after = int((datetime.now() - timedelta(days=days)).timestamp())
-    response = requests.get(
-        "https://www.strava.com/api/v3/athlete/activities",
-        headers={"Authorization": f"Bearer {access_token}"},
-        params={"after": after, "per_page": 50},
-    )
-    activities = response.json()
-    rows = []
-    for a in activities:
-        rows.append({
-            "date": a["start_date_local"][:10],
-            "type": a["type"],
-            "distance_km": round(a["distance"] / 1000, 2),
-            "duration_min": round(a["moving_time"] / 60, 1),
-            "avg_heart_rate": a.get("average_heartrate", "N/A"),
-        })
-    return rows
+    if row is None:
+        return "No session planned for today.", "<p>No session planned for today.</p>"
 
-# --- Read CSVs ---
+    session_type = row.get("session_type", "").lower()
+    session_name = row.get("session_name", "")
+    details = row.get("details", "")
+    location = row.get("location", "").capitalize()
 
-def read_csv(path):
-    with open(path, newline="", encoding="utf-8-sig") as f:
-        return list(csv.DictReader(f))
+    # --- Plain text ---
+    lines = [f"{session_name} ({location})"]
 
-def filter_last_7_days(log_rows):
-    cutoff = datetime.now() - timedelta(days=7)
-    filtered = []
-    for row in log_rows:
-        try:
-            row_date = datetime.strptime(row["date"], "%Y-%m-%d")
-            if row_date >= cutoff:
-                filtered.append(row)
-        except ValueError:
-            continue
-    return filtered
+    if session_type == "run":
+        distance = row.get("distance_km", "")
+        pace = row.get("target_pace", "")
+        hr_zone = row.get("target_hr_zone", "")
+        if distance:
+            lines.append(f"Distance: {distance} km")
+        if pace:
+            lines.append(f"Target pace: {pace}")
+        if hr_zone:
+            lines.append(f"HR zone: {hr_zone}")
+        if details:
+            lines.append(f"Session: {details}")
 
-# --- Build prompt ---
+    elif session_type in ("gym", "bodyweight"):
+        if details:
+            exercises = details.split(",")
+            for ex in exercises:
+                lines.append(f"• {ex.strip()}")
 
-def build_prompt(strava_activities, log_rows, targets):
-    target = targets[0] if targets else {}
+    elif session_type == "rest":
+        if details:
+            lines.append(details)
 
-    strava_text = "STRAVA ACTIVITIES (last 7 days):\n"
-    if strava_activities:
-        for a in strava_activities:
-            strava_text += f"  {a['date']} | {a['type']} | {a['distance_km']}km | {a['duration_min']}min | HR: {a['avg_heart_rate']}\n"
-    else:
-        strava_text += "  No activities recorded.\n"
+    plain = "\n".join(lines)
 
-    log_text = "TRAINING LOG (last 7 days):\n"
-    if log_rows:
-        for row in log_rows:
-            log_text += (
-                f"  {row['date']} | Location: {row['location']} | "
-                f"Run: {row['run_km']}km RPE {row['run_rpe']} ({row['run_session_type']}) | "
-                f"Gym: {row['gym_session']} | Notes: {row['notes']}\n"
-            )
-    else:
-        log_text += "  No log entries for this period.\n"
+    # --- HTML ---
+    html_lines = [
+        f"<h3 style='margin:0 0 8px 0;'>{session_name} "
+        f"<span style='font-weight:normal; color:#666;'>({location})</span></h3>"
+    ]
 
-    targets_text = f"""
-WEEKLY TARGETS:
-  Total run: {target.get('weekly_run_km_min', '?')}–{target.get('weekly_run_km_max', '?')} km
-  Long run minimum: {target.get('long_run_min_km', '?')} km
-  Quality sessions: {target.get('quality_sessions_per_week', '?')} per week
-  Gym sessions (when in Dublin): {target.get('gym_sessions', '?')}
-"""
+    if session_type == "run":
+        distance = row.get("distance_km", "")
+        pace = row.get("target_pace", "")
+        hr_zone = row.get("target_hr_zone", "")
+        html_lines.append("<ul style='margin:0; padding-left:20px;'>")
+        if distance:
+            html_lines.append(f"<li>Distance: {distance} km</li>")
+        if pace:
+            html_lines.append(f"<li>Target pace: {pace}</li>")
+        if hr_zone:
+            html_lines.append(f"<li>HR zone: {hr_zone}</li>")
+        if details:
+            html_lines.append(f"<li>Session: {details}</li>")
+        html_lines.append("</ul>")
 
-    prompt = f"""
-You are a running and fitness coach. Review the athlete's last 7 days of training data and provide concise, practical feedback.
+    elif session_type in ("gym", "bodyweight"):
+        if details:
+            html_lines.append("<ul style='margin:0; padding-left:20px;'>")
+            for ex in details.split(","):
+                html_lines.append(f"<li>{ex.strip()}</li>")
+            html_lines.append("</ul>")
 
-{strava_text}
-{log_text}
-{targets_text}
+    elif session_type == "rest":
+        if details:
+            html_lines.append(f"<p style='margin:4px 0;'>{details}</p>")
 
-CONTEXT: The athlete is based between Dublin and Waterford during summer, with gym access only in Dublin. The schedule is flexible — target-based rather than rigid.
-
-Please provide:
-1. A brief summary of the week (3–4 sentences max)
-2. Whether weekly targets were hit (simple yes/no per target)
-3. 3–5 bullet point recommendations for the coming week
-4. Any concerns or patterns worth noting
-
-Keep the tone direct and practical. No waffle.
-"""
-    return prompt
-
-# --- Main ---
-
-def main():
-    print("Fetching Strava data...")
-    tokens = load_tokens()
-    tokens = refresh_if_needed(tokens)
-    strava_activities = get_strava_activities(tokens["access_token"], days=7)
-
-    print("Reading training log and targets...")
-    log_rows = read_csv(TRAINING_LOG_PATH)
-    targets = read_csv(TARGETS_PATH)
-    recent_log = filter_last_7_days(log_rows)
-
-    print("Sending to Gemini...\n")
-    prompt = build_prompt(strava_activities, recent_log, targets)
-
-    client = genai.Client(api_key=GEMINI_API_KEY)
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
-
-    print("=" * 60)
-    print("WEEKLY TRAINING SUMMARY")
-    print("=" * 60)
-    print(response.text)
-
-if __name__ == "__main__":
-    main()
+    html = "\n".join(html_lines)
+    return plain, html

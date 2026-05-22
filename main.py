@@ -11,6 +11,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from src.quote import pick_random_quote
 from src.mean import make_insult
+from src.training import get_today_plan, format_plan_for_email
 
 warnings.filterwarnings(
     "ignore",
@@ -256,9 +257,8 @@ def main() -> int:
         raise SystemExit(f"Missing settings in .env: {', '.join(missing)}")
 
     # ---- Workout ----
-    plan_row = get_today_training_plan_row(TRAINING_PLAN_PATH, date.today())
-    workout_lines = format_training_plan_row(plan_row)
-
+    plan_row = get_today_plan()
+    workout_plain, workout_html = format_plan_for_email(plan_row)
     # ---- Quote ----
     q = pick_random_quote(
         PASSAGES_FOLDER,
@@ -276,7 +276,7 @@ def main() -> int:
     lines.append(subject)
     lines.append("")
     lines.append("Workout")
-    lines.extend(workout_lines)
+    lines.append(workout_plain)
     lines.append("")
     lines.append("Quote")
     lines.append(f"\u201c{pretty}\u201d")
@@ -292,13 +292,8 @@ def main() -> int:
     html_parts.append(
         "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Workout</h2>"
     )
-    html_parts.append("<ul>")
-    for wl in workout_lines:
-        html_parts.append(f"<li>{html_escape(strip_bullet_prefix(wl))}</li>")
-    html_parts.append("</ul>")
-    html_parts.append(
-        "<h2 style='margin:18px 0 8px 0; font-size:18px; font-weight:700;'>Quote</h2>"
-    )
+    html_parts.append(workout_html)
+
     html_parts.append(
         "<blockquote style='margin:0 0 8px 0; padding-left:12px; "
         "border-left:3px solid #ddd;'>"
