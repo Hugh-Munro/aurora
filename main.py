@@ -12,6 +12,7 @@ from openpyxl import load_workbook
 from src.quote import pick_random_quote
 from src.mean import make_insult
 from src.training import get_today_plan, format_plan_for_email
+from src.portfolio import build_portfolio_html
 
 warnings.filterwarnings(
     "ignore",
@@ -260,6 +261,9 @@ def main() -> int:
     plan_row = get_today_plan()
     workout_plain, workout_html = format_plan_for_email(plan_row)
     
+    # ---- Portfolio ----
+    portfolio_html = build_portfolio_html()
+    
     # ---- Weather ----
     location = plan_row.get("location", "dublin") if plan_row else "dublin"
     from src.training import get_weather
@@ -281,6 +285,9 @@ def main() -> int:
     # Plain text
     lines: list[str] = []
     lines.append(subject)
+    lines.append("")
+    lines.append("Portfolio")
+    lines.append("See HTML version for portfolio details.")
     lines.append("")
     lines.append("Workout")
     lines.append(workout_plain)
@@ -329,6 +336,8 @@ def main() -> int:
         + "</tr></table>"
     )
 
+    html_parts.append(portfolio_html)
+
     # Workout
     html_parts.append(workout_html)
 
@@ -363,28 +372,28 @@ def main() -> int:
         body_html=body_html,
     )
 
-    # ---- Send mean message ----
-    ross_to = "david.mcloughlin@ucdconnect.ie"
-    mean_cc = "ross.cashin@ucdconnect.ie"
-    mean_text = make_insult()
-    mean_subject = f"Mean Message: {today_str}"
-    mean_html = (
-        "<div style='font-family:Arial,sans-serif;'>"
-        f"<p style='margin:0; font-size:16px;'>{html_escape(mean_text)}</p>"
-        "</div>"
-    )
-    send_email_smtp(
-        smtp_host=smtp_host,
-        smtp_port=smtp_port,
-        smtp_user=smtp_user,
-        smtp_pass=smtp_pass,
-        mail_from=mail_from,
-        mail_to=ross_to,
-        subject=mean_subject,
-        body_text=mean_text,
-        body_html=mean_html,
-        mail_cc=mean_cc,
-    )
+    # # ---- Send mean message ----
+    # ross_to = "david.mcloughlin@ucdconnect.ie"
+    # mean_cc = "ross.cashin@ucdconnect.ie"
+    # mean_text = make_insult()
+    # mean_subject = f"Mean Message: {today_str}"
+    # mean_html = (
+    #     "<div style='font-family:Arial,sans-serif;'>"
+    #     f"<p style='margin:0; font-size:16px;'>{html_escape(mean_text)}</p>"
+    #     "</div>"
+    # )
+    # send_email_smtp(
+    #     smtp_host=smtp_host,
+    #     smtp_port=smtp_port,
+    #     smtp_user=smtp_user,
+    #     smtp_pass=smtp_pass,
+    #     mail_from=mail_from,
+    #     mail_to=ross_to,
+    #     subject=mean_subject,
+    #     body_text=mean_text,
+    #     body_html=mean_html,
+    #     mail_cc=mean_cc,
+    # )
 
     return 0
 

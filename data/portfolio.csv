@@ -1,0 +1,7 @@
+﻿symbol,yf_ticker,name,asset_class,shares,purchase_price,purchase_currency
+VWRL,VWRL.L,Vanguard FTSE All-World,Equity,28,123.08,GBP
+IBC1,IBC1.MU,iShares Treasury 0-1yr,Fixed Income,7,100.4,EUR
+IGLN,IGLN.L,iShares Physical Gold,Alternatives,8,70.737,USD
+MNST,MNST,Monster Beverage,Equity,2,63.85,USD
+BTC,BTC-USD,Bitcoin,Alternatives,0.00125207,119048.51,USD
+ETH,ETH-USD,Ethereum,Alternatives,0.02278725,4358.79,USD

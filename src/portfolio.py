@@ -1,280 +1,443 @@
+"""
+src/portfolio.py
+----------------
+Builds the portfolio block for the daily email.
+
+Public entry point: build_portfolio_html() -> str
+  Returns an email-safe HTML fragment for injection into main.py's body_html.
+
+Design notes:
+  - One batched yf.download call (rate-limit safe), with retry/backoff.
+  - Currency is read per-instrument from yfinance, NOT inferred from the
+    ticker suffix. '.L' covers USD (IGLN), GBp (SGLN/VWRL) and EUR (EGLN)
+    lines simultaneously, so suffix-guessing is unsafe.
+  - LSE pence ('GBp') is detected case-sensitively and divided by 100.
+  - NAV is built from a per-position EUR value matrix that is forward-filled
+    and date-aligned, so missing prints never distort the series.
+  - All HTML is <table> + inline styles only: Gmail strips SVG and ignores
+    flex / gap / CSS variables.
+"""
 from __future__ import annotations
 
+import csv
 import math
-from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+import time
+import traceback
+from datetime import datetime, timedelta
+from pathlib import Path
 
 import pandas as pd
 import yfinance as yf
-from openpyxl import load_workbook
 
-
-# ------------------------------------------------------
-# REQUIRED by your email script
-# ------------------------------------------------------
-WORKBOOK_PATH = r"C:\Users\hugom\OneDrive\Desktop\Root\Personal\Projects\Portfolio\Portfolio.xlsx"
-
-
-# ------------------------------------------------------
+# ==========================================================================
 # CONFIG
-# ------------------------------------------------------
-PORTFOLIO_SHEET = "portfolio"
-PNL_SHEET = "PnL"
+# ==========================================================================
+INCEPTION_DATE = "2025-09-15"
+PORTFOLIO_PATH = Path(__file__).resolve().parent.parent / "data" / "portfolio.csv"
+TRADING_DAYS = 252
+RISK_FREE_ANNUAL = 0.0          # e.g. 0.025 for a 2.5% cash rate; 0 = plain Sharpe
+HISTORY_START = "2025-08-01"    # a few weeks before inception; smaller = faster
+BASE_CCY = "EUR"
 
-DOWNLOAD_PERIOD = "3y"
-WINDOW = 252
-RISK_FREE_ANNUAL = 0.0
-
-REQ_PORT = {"Symbol", "YF_Ticker", "Shares", "Price"}
-REQ_PNL = {"YF_Ticker", "Shares", "Prev_Close", "Last_Close", "Daily_PnL_EUR", "Start_Of_Year_Close", "YTD_Return_Pct"}
-
-
-def _norm(s: str) -> str:
-    return (s or "").strip()
-
-
-def _to_float(x, default=0.0) -> float:
-    try:
-        if x is None:
-            return default
-        if isinstance(x, str) and x.strip() == "":
-            return default
-        if isinstance(x, str):
-            x = x.replace(",", "")
-        return float(x)
-    except Exception:
-        return default
+# Palette
+GREEN = "#0F6E56"
+RED = "#993C1D"
+INK = "#1a1a1a"
+MUTE = "#888888"
+CARD_BG = "#f7f7f5"
+COLOURS = {"Equity": "#5DCAA5", "Alternatives": "#0F6E56", "Fixed Income": "#B0C4B1"}
 
 
-def _find_header_row(ws, required: set[str], max_scan_rows: int = 30) -> Tuple[int, Dict[str, int]]:
-    """
-    Returns (header_row_1_based, header_map[name] = col_1_based)
-    """
-    for r in range(1, min(max_scan_rows, ws.max_row) + 1):
-        row_vals = [ws.cell(row=r, column=c).value for c in range(1, ws.max_column + 1)]
-        headers = [_norm(str(v)) if v is not None else "" for v in row_vals]
-        if not any(headers):
+# ==========================================================================
+# CSV
+# ==========================================================================
+def read_portfolio() -> list[dict]:
+    """Read the portfolio CSV. Tolerates tab/comma/semicolon delimiters and
+    a range of encodings; strips whitespace from keys and values."""
+    encodings = ["utf-8-sig", "utf-8", "latin-1", "cp1252"]
+    last_err: Exception | None = None
+    for enc in encodings:
+        try:
+            with open(PORTFOLIO_PATH, newline="", encoding=enc) as f:
+                sample = f.read(2048)
+                f.seek(0)
+                try:
+                    dialect = csv.Sniffer().sniff(sample, delimiters="\t,;")
+                except csv.Error:
+                    dialect = csv.excel_tab
+                rows = list(csv.DictReader(f, dialect=dialect))
+            cleaned = [{(k or "").strip(): (v or "").strip() for k, v in r.items()}
+                       for r in rows]
+            if not cleaned:
+                raise RuntimeError("Portfolio CSV is empty")
+            return cleaned
+        except UnicodeDecodeError as e:
+            last_err = e
             continue
-        if required.issubset(set(headers)):
-            hm = {h: headers.index(h) + 1 for h in headers if h}  # first occurrence
-            return r, hm
-    raise RuntimeError(f"Could not find required headers: {sorted(required)}")
+    raise RuntimeError(f"Could not read portfolio CSV: {last_err}")
 
 
-def _series_map(dl: pd.DataFrame, tickers: List[str], field: str) -> Dict[str, pd.Series]:
-    out: Dict[str, pd.Series] = {}
-    if dl is None or dl.empty:
-        return out
+# ==========================================================================
+# CURRENCY
+# ==========================================================================
+def get_instrument_currencies(tickers: list[str]) -> dict[str, str]:
+    """Ask yfinance for each instrument's quote currency, preserving exact
+    case ('GBp' = pence vs 'GBP' = pounds)."""
+    currencies: dict[str, str] = {}
+    for t in tickers:
+        ccy = None
+        try:
+            fi = yf.Ticker(t).fast_info
+            ccy = getattr(fi, "currency", None)
+            if ccy is None and hasattr(fi, "get"):
+                ccy = fi.get("currency")
+        except Exception:                                # noqa: BLE001
+            ccy = None
+        currencies[t] = ccy if ccy else _fallback_currency(t)
+    return currencies
 
-    if isinstance(dl.columns, pd.MultiIndex):
-        # yfinance typically returns columns like (ticker, field)
-        for t in tickers:
-            key = (t, field)
-            if key in dl.columns:
-                out[t] = dl[key].dropna()
+
+def _fallback_currency(ticker: str) -> str:
+    """Last-resort guess ONLY if yfinance fast_info fails.
+
+    A '.L' suffix does NOT reliably mean pence (IGLN.L is USD, SGLN.L is GBp,
+    EGLN.L is EUR), so the safe fallback for an unknown .L ticker is plain
+    GBP with no divisor -- better to be off by an FX rate than by 100x.
+    """
+    if ticker.endswith(".L"):
+        return "GBP"
+    if ticker.endswith((".MU", ".DE", ".F", ".AS", ".PA")):
+        return "EUR"
+    return "USD"
+
+
+def normalise_currency(raw_ccy: str) -> tuple[str, float]:
+    """Map a yfinance quote currency to (major_currency, divisor).
+
+    CASE-SENSITIVE by design: 'GBp' = pence -> ('GBP', 100.0);
+    'GBP' = pounds -> ('GBP', 1.0). yfinance uses exactly this convention.
+    """
+    c = (raw_ccy or "USD").strip()
+    minor = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0),
+             "ZAc": ("ZAR", 100.0), "ILA": ("ILS", 100.0)}
+    return minor.get(c, (c.upper(), 1.0))
+
+
+# ==========================================================================
+# MARKET DATA
+# ==========================================================================
+def _download_with_retry(tickers: list[str], start: str, end: str,
+                          retries: int = 3, pause: float = 2.0) -> pd.DataFrame:
+    """One batched yf.download call with linear backoff on transient failure.
+    Batching ALL tickers into a single call is the key to not getting rate
+    limited -- it is one HTTP round-trip, not one per ticker."""
+    last_err: Exception | None = None
+    for attempt in range(retries):
+        try:
+            raw = yf.download(
+                tickers,
+                start=start,
+                end=end,
+                auto_adjust=True,        # explicit: 'Close' is the adjusted close
+                actions=False,
+                progress=False,
+                threads=True,
+                group_by="column",       # columns are (Field, Ticker)
+            )
+            if raw is not None and not raw.empty:
+                return raw
+        except Exception as e:                           # noqa: BLE001
+            last_err = e
+        time.sleep(pause * (attempt + 1))
+    raise RuntimeError(f"yfinance download failed after {retries} attempts: {last_err}")
+
+
+def _extract_close(raw: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
+    """Return a Date-indexed DataFrame of close prices, one column per ticker.
+    Handles every column shape yfinance currently emits."""
+    if isinstance(raw.columns, pd.MultiIndex):
+        lvl0 = set(raw.columns.get_level_values(0))
+        if "Close" in lvl0:
+            close = raw["Close"].copy()
+        else:                                            # (Ticker, Field) order
+            close = raw.xs("Close", axis=1, level=1).copy()
     else:
-        # single ticker case
-        if field in dl.columns and len(tickers) == 1:
-            out[tickers[0]] = dl[field].dropna()
-
-    return out
-
-
-def ann_vol_and_sharpe(rets: pd.Series, window: int, rf_annual: float) -> Tuple[Optional[float], Optional[float]]:
-    r = rets.dropna()
-    if r.shape[0] < 2:
-        return None, None
-    r = r.iloc[-window:] if r.shape[0] >= window else r
-    if r.shape[0] < 2:
-        return None, None
-
-    vol = float(r.std(ddof=1)) * math.sqrt(252.0)
-    if vol == 0.0:
-        return vol, None
-
-    mean_annual = float(r.mean()) * 252.0
-    sharpe = (mean_annual - rf_annual) / vol
-    return vol, float(sharpe)
+        close = raw[["Close"]].copy()
+        close.columns = [tickers[0]]
+    close = close[[c for c in tickers if c in close.columns]]
+    return close.sort_index()
 
 
-def main(xlsx_path: str = WORKBOOK_PATH, save: bool = True) -> None:
+# ==========================================================================
+# FX
+# ==========================================================================
+def build_fx_table(close: pd.DataFrame, needed_ccys: set[str],
+                    index: pd.DatetimeIndex) -> pd.DataFrame:
+    """DataFrame indexed like `index`, one column per currency, giving units
+    of BASE_CCY per 1 unit of that currency. BASE_CCY -> 1.0.
+
+    Uses Yahoo's liquid EUR{CCY}=X pairs (CCY per EUR) and inverts them.
     """
-    - Reads Portfolio sheet positions (Symbol, YF_Ticker, Shares, Price)
-    - Updates Portfolio.Price with latest Close
-    - Updates PnL sheet per-ticker metrics (matching by YF_Ticker)
-    - Prints summary lines parsed by your email script
+    fx = pd.DataFrame(index=index)
+    fx[BASE_CCY] = 1.0
+    for ccy in needed_ccys:
+        if ccy == BASE_CCY:
+            continue
+        pair = f"{BASE_CCY}{ccy}=X"           # = CCY per EUR
+        if pair in close.columns:
+            series = close[pair].reindex(index).ffill().bfill()
+            fx[ccy] = 1.0 / series            # invert -> EUR per CCY
+        else:
+            fallback = {"GBP": 1.17, "USD": 0.92}.get(ccy, 1.0)
+            fx[ccy] = fallback
+    return fx
+
+
+# ==========================================================================
+# VALUE MATRIX  (per-position EUR value; everything derives from this)
+# ==========================================================================
+def build_value_matrix(positions: list[dict], close: pd.DataFrame,
+                        currencies: dict[str, str], fx: pd.DataFrame):
+    """Return (value_df, ok_positions).
+
+    value_df: Date-indexed, one column per ticker, holding the EUR market
+    value of that position on each date. Forward-filled then NA-dropped, so
+    NAV is never distorted by a missing print on a given day.
     """
-    wb = load_workbook(xlsx_path)
-    if PORTFOLIO_SHEET not in wb.sheetnames:
-        raise RuntimeError(f"Missing sheet '{PORTFOLIO_SHEET}' in workbook.")
-    if PNL_SHEET not in wb.sheetnames:
-        raise RuntimeError(f"Missing sheet '{PNL_SHEET}' in workbook.")
-
-    ws_port = wb[PORTFOLIO_SHEET]
-    ws_pnl = wb[PNL_SHEET]
-
-    # --- headers ---
-    port_hdr_row, port_hm = _find_header_row(ws_port, REQ_PORT)
-    pnl_hdr_row, pnl_hm = _find_header_row(ws_pnl, REQ_PNL)
-
-    # --- read Portfolio positions ---
-    positions: List[Dict[str, object]] = []
-    cash_eur = 0.0
-
-    r = port_hdr_row + 1
-    while r <= ws_port.max_row:
-        sym = _norm(str(ws_port.cell(r, port_hm["Symbol"]).value or ""))
-        if not sym:
-            r += 1
+    per_position = {}
+    ok_positions: list[dict] = []
+    for pos in positions:
+        t = pos["yf_ticker"]
+        if t not in close.columns:
             continue
-        if sym.strip().lower() == "total":
-            break
-
-        sym_l = sym.strip().lower()
-        if sym_l == "cash":
-            # Prefer Market_Value if present; otherwise price*shares
-            mv_col = port_hm.get("Market_Value")
-            if mv_col:
-                cash_eur = _to_float(ws_port.cell(r, mv_col).value, 0.0)
-            else:
-                px = _to_float(ws_port.cell(r, port_hm["Price"]).value, 0.0)
-                sh = _to_float(ws_port.cell(r, port_hm["Shares"]).value, 0.0)
-                cash_eur = px * sh
-            r += 1
+        price = close[t].dropna()
+        if len(price) < 2:
             continue
+        shares = float(pos["shares"])
+        major_ccy, divisor = normalise_currency(currencies.get(t, "USD"))
+        price_major = price / divisor                    # native units -> major
+        rate = fx[major_ccy].reindex(price.index).ffill().bfill()
+        per_position[t] = price_major * shares * rate
+        pos["_major_ccy"] = major_ccy
+        ok_positions.append(pos)
 
-        tkr = _norm(str(ws_port.cell(r, port_hm["YF_Ticker"]).value or ""))
-        sh = _to_float(ws_port.cell(r, port_hm["Shares"]).value, 0.0)
+    if not per_position:
+        raise RuntimeError("No positions had usable price data")
 
-        if tkr and tkr.lower() != "nan" and sh != 0.0:
-            positions.append({"row": r, "ticker": tkr, "shares": sh})
-        r += 1
+    value_df = pd.DataFrame(per_position).ffill().dropna(how="any")
+    return value_df, ok_positions
 
-    if not positions:
-        raise RuntimeError("No non-zero positions found on Portfolio sheet (excluding Cash).")
 
-    tickers = [p["ticker"] for p in positions]
+# ==========================================================================
+# HTML HELPERS  (Gmail target: table layout, no SVG, no flex)
+# ==========================================================================
+def _sign(v: float) -> str:
+    return "+" if v >= 0 else ""
 
-    # --- download data once ---
-    dl = yf.download(
-        tickers=tickers,
-        period=DOWNLOAD_PERIOD,
-        interval="1d",
-        auto_adjust=False,
-        group_by="ticker",
-        threads=True,
-        progress=False,
+
+def _pc(v: float) -> str:
+    return GREEN if v >= 0 else RED
+
+
+def _metric_cell(label: str, value: str, colour: str = INK) -> str:
+    """One stat box, as a table cell. Used in a 2x2 grid."""
+    return (
+        f"<td style='width:50%;padding:3px;'>"
+        f"<div style='background:{CARD_BG};border-radius:8px;padding:10px;'>"
+        f"<p style='font-family:Arial,sans-serif;font-size:10px;color:{MUTE};"
+        f"margin:0 0 3px 0;letter-spacing:0.04em;'>{label}</p>"
+        f"<p style='font-family:Arial,sans-serif;font-size:16px;font-weight:bold;"
+        f"margin:0;color:{colour};'>{value}</p>"
+        f"</div></td>"
     )
 
-    close_map = _series_map(dl, tickers, "Close")
-    adj_map = _series_map(dl, tickers, "Adj Close")
-    for t in tickers:
-        if t not in adj_map:
-            adj_map[t] = close_map.get(t, pd.Series(dtype=float))
 
-    # --- update Portfolio.Price ---
-    for p in positions:
-        t = p["ticker"]
-        s = close_map.get(t)
-        if s is not None and not s.empty:
-            ws_port.cell(p["row"], port_hm["Price"]).value = float(s.iloc[-1])
+def attribution_bars(attribution: dict) -> str:
+    """Vertical column chart of per-asset-class daily P&L %.
+    Each column: bar (height encodes |pct|) above a label and value.
+    Table-cell construction so it renders in Gmail."""
+    if not attribution:
+        return ""
+    max_abs = max(
+        max(abs(d["pnl_pct"]) for d in attribution.values()),
+        0.5,
+    )
+    max_h = 90                                           # px, tallest bar
+    cells = []
+    for ac, d in attribution.items():
+        pct = d["pnl_pct"]
+        colour = RED if pct < 0 else COLOURS.get(ac, GREEN)
+        h = max(3, round(abs(pct) / max_abs * max_h))
+        cells.append(
+            f"<td style='vertical-align:bottom;text-align:center;"
+            f"padding:0 6px;width:33%;'>"
+            # value above the bar
+            f"<p style='font-family:Arial,sans-serif;font-size:11px;"
+            f"font-weight:bold;color:{colour};margin:0 0 4px 0;'>"
+            f"{_sign(pct)}{pct:.2f}%</p>"
+            # the bar itself
+            f"<div style='height:{max_h - h}px;font-size:1px;line-height:1px;'>"
+            f"&nbsp;</div>"
+            f"<div style='height:{h}px;background:{colour};border-radius:3px;"
+            f"font-size:1px;line-height:1px;'>&nbsp;</div>"
+            # label under the bar
+            f"<p style='font-family:Arial,sans-serif;font-size:11px;"
+            f"color:{MUTE};margin:6px 0 0 0;'>{ac}</p>"
+            f"</td>"
+        )
+    return (
+        f"<table role='presentation' cellpadding='0' cellspacing='0' border='0' "
+        f"style='width:100%;border-collapse:collapse;'><tr>{''.join(cells)}</tr>"
+        f"</table>"
+    )
 
-    # --- update PnL sheet per ticker (match by YF_Ticker) ---
-    # Build a map from PnL ticker -> row
-    pnl_row_by_ticker: Dict[str, int] = {}
-    rr = pnl_hdr_row + 1
-    while rr <= ws_pnl.max_row:
-        t = _norm(str(ws_pnl.cell(rr, pnl_hm["YF_Ticker"]).value or ""))
-        if t:
-            pnl_row_by_ticker[t] = rr
-        rr += 1
+# ==========================================================================
+# PUBLIC ENTRY POINT
+# ==========================================================================
+def build_portfolio_html() -> str:
+    try:
+        # ---- data pipeline ----------------------------------------------
+        positions = read_portfolio()
+        asset_tickers = [p["yf_ticker"] for p in positions]
+        currencies = get_instrument_currencies(asset_tickers)
+        needed_ccys = {normalise_currency(c)[0] for c in currencies.values()}
+        fx_tickers = [f"{BASE_CCY}{c}=X" for c in needed_ccys if c != BASE_CCY]
+        all_tickers = asset_tickers + fx_tickers
 
-    today_year = datetime.today().year
+        end = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        raw = _download_with_retry(all_tickers, start=HISTORY_START, end=end)
+        close = _extract_close(raw, all_tickers)
+        missing = [t for t in asset_tickers if t not in close.columns]
 
-    # fill from positions (shares from Portfolio overrides PnL shares if you want)
-    for p in positions:
-        t = p["ticker"]
-        sh = float(p["shares"])
-        s = close_map.get(t, pd.Series(dtype=float)).dropna()
-        if s.empty:
-            continue
+        fx = build_fx_table(close, needed_ccys, close.index)
+        value_df, positions = build_value_matrix(positions, close, currencies, fx)
+        nav = value_df.sum(axis=1)
+        if len(nav) < 2:
+            raise RuntimeError("Not enough overlapping price history to build NAV")
 
-        last_close = float(s.iloc[-1])
-        prev_close = float(s.iloc[-2]) if len(s) >= 2 else last_close
-        daily_pnl = (last_close - prev_close) * sh
+        # ---- metrics ----------------------------------------------------
+        nav_today = float(nav.iloc[-1])
+        nav_prev = float(nav.iloc[-2])
+        daily_pnl = nav_today - nav_prev
+        daily_pct = daily_pnl / nav_prev * 100 if nav_prev else 0.0
 
-        s_y = s[s.index.year == today_year]
-        start_of_year = float(s_y.iloc[0]) if not s_y.empty else last_close
-        ytd = (last_close / start_of_year - 1.0) * 100.0 if start_of_year else 0.0
+        # cost basis in EUR (FX at latest -- includes FX drift since purchase)
+        cost = 0.0
+        for p in positions:
+            pay_ccy = (p.get("purchase_currency") or "EUR").strip().upper()
+            rate = float(fx[pay_ccy].iloc[-1]) if pay_ccy in fx.columns else 1.0
+            cost += float(p["purchase_price"]) * float(p["shares"]) * rate
+        itd_pct = (nav_today - cost) / cost * 100 if cost else 0.0
 
-        row = pnl_row_by_ticker.get(t)
-        if row is None:
-            # If ticker not present on PnL sheet, skip (don’t destroy user layout)
-            continue
+        yr_start = pd.Timestamp(f"{datetime.today().year}-01-01")
+        ytd = nav[nav.index >= yr_start]
+        ytd_pct = ((float(ytd.iloc[-1]) - float(ytd.iloc[0])) / float(ytd.iloc[0]) * 100
+                   if len(ytd) >= 2 else 0.0)
 
-        ws_pnl.cell(row, pnl_hm["Shares"]).value = sh
-        ws_pnl.cell(row, pnl_hm["Prev_Close"]).value = prev_close
-        ws_pnl.cell(row, pnl_hm["Last_Close"]).value = last_close
-        ws_pnl.cell(row, pnl_hm["Daily_PnL_EUR"]).value = daily_pnl
-        ws_pnl.cell(row, pnl_hm["Start_Of_Year_Close"]).value = start_of_year
-        ws_pnl.cell(row, pnl_hm["YTD_Return_Pct"]).value = ytd
+        returns = nav.pct_change().dropna()
+        if len(returns) > 1 and returns.std() > 0:
+            vol = float(returns.std() * math.sqrt(TRADING_DAYS) * 100)
+            rf_daily = RISK_FREE_ANNUAL / TRADING_DAYS
+            sharpe = float((returns - rf_daily).mean() / returns.std()
+                           * math.sqrt(TRADING_DAYS))
+        else:
+            vol, sharpe = 0.0, 0.0
 
-    # --- portfolio-level metrics (printed for email) ---
-    # Daily PnL
-    portfolio_daily_pnl = 0.0
-    for p in positions:
-        t = p["ticker"]
-        sh = float(p["shares"])
-        s = close_map.get(t, pd.Series(dtype=float)).dropna()
-        if len(s) < 2:
-            continue
-        portfolio_daily_pnl += (float(s.iloc[-1]) - float(s.iloc[-2])) * sh
+        cummax = nav.cummax()
+        drawdown = float(((nav - cummax) / cummax).iloc[-1] * 100)
 
-    # YTD portfolio return (same-currency assumption; cash constant)
-    total_start = float(cash_eur)
-    total_curr = float(cash_eur)
-    for p in positions:
-        t = p["ticker"]
-        sh = float(p["shares"])
-        s = close_map.get(t, pd.Series(dtype=float)).dropna()
-        if s.empty:
-            continue
-        s_y = s[s.index.year == today_year]
-        start_px = float(s_y.iloc[0]) if not s_y.empty else float(s.iloc[-1])
-        last_px = float(s.iloc[-1])
-        total_start += start_px * sh
-        total_curr += last_px * sh
+        # attribution by asset class (today): prev/now are the SAME two
+        # dates for every position because they come from value_df.
+        attribution: dict = {}
+        prev_row, now_row = value_df.iloc[-2], value_df.iloc[-1]
+        for p in positions:
+            t, ac = p["yf_ticker"], p.get("asset_class", "Other")
+            if t not in value_df.columns:
+                continue
+            attribution.setdefault(ac, {"pnl_eur": 0.0, "prev_nav": 0.0})
+            attribution[ac]["pnl_eur"] += float(now_row[t] - prev_row[t])
+            attribution[ac]["prev_nav"] += float(prev_row[t])
+        for ac in attribution:
+            prev = attribution[ac]["prev_nav"]
+            attribution[ac]["pnl_pct"] = (attribution[ac]["pnl_eur"] / prev * 100
+                                          if prev else 0.0)
 
-    ytd_pct = None
-    if total_start != 0.0:
-        ytd_pct = (total_curr / total_start - 1.0) * 100.0
+        # ---- email-safe HTML --------------------------------------------
+        pnl_bg = "#E1F5EE" if daily_pnl >= 0 else "#FAECE7"
+        attrib = attribution_bars(attribution)
 
-    # 252d vol + sharpe (adj close)
-    adj_df = pd.concat(
-        {t: adj_map[t] for t in tickers if t in adj_map and not adj_map[t].empty},
-        axis=1,
-        join="inner",
-    ).dropna(how="any")
+        legend_cells = []
+        for ac, d in attribution.items():
+            c = RED if d["pnl_eur"] < 0 else COLOURS.get(ac, GREEN)
+            s = "+" if d["pnl_eur"] >= 0 else ""
+            legend_cells.append(
+                f"<td style='padding:0 14px 0 0;font-family:Arial,sans-serif;"
+                f"font-size:11px;color:{MUTE};white-space:nowrap;'>"
+                f"<span style='display:inline-block;width:8px;height:8px;"
+                f"background:{c};margin-right:5px;'>&nbsp;</span>"
+                f"{ac} {s}\u20ac{abs(d['pnl_eur']):,.2f}</td>"
+            )
+        legend = (f"<table role='presentation' cellpadding='0' cellspacing='0' "
+                  f"border='0' style='margin-top:10px;'><tr>"
+                  f"{''.join(legend_cells)}</tr></table>")
 
-    vol_252 = None
-    sharpe_252 = None
-    if adj_df.shape[0] >= 3:
-        shares_map = {p["ticker"]: float(p["shares"]) for p in positions}
-        share_vec = pd.Series(shares_map).reindex(adj_df.columns).astype(float)
-        port_value = (adj_df * share_vec).sum(axis=1) + float(cash_eur)
-        port_rets = port_value.pct_change()
-        vol_252, sharpe_252 = ann_vol_and_sharpe(port_rets, WINDOW, float(RISK_FREE_ANNUAL))
+        warn = ""
+        if missing:
+            warn = (f"<p style='font-family:Arial,sans-serif;font-size:10px;"
+                    f"color:{RED};margin:0 0 8px 0;'>"
+                    f"\u26a0 No data for: {', '.join(missing)}</p>")
 
-    # Save if requested (your daily email run should save)
-    if save:
-        wb.save(xlsx_path)
+        return f"""{warn}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+<tr><td>
+<div style="background:#ffffff;border:1px solid #e0e0e0;border-radius:12px;padding:20px;">
 
-    # ---- These printed keys MUST match your email parser ----
-    print(f"Portfolio Daily PnL (EUR): {portfolio_daily_pnl:,.2f}")
-    print("Portfolio YTD Return (%): " + ("N/A" if ytd_pct is None else f"{ytd_pct:,.4f}"))
-    print("Portfolio Vol_252d (ann): " + ("N/A" if vol_252 is None else f"{vol_252:.6f}"))
-    print("Portfolio Sharpe_252d:    " + ("N/A" if sharpe_252 is None else f"{sharpe_252:.6f}"))
+  <!-- NAV header row -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+    <tr>
+      <td style="vertical-align:top;">
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.08em;text-transform:uppercase;">Portfolio NAV</p>
+        <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:{INK};margin:0 0 4px 0;">&euro;{nav_today:,.2f}</p>
+        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:{_pc(daily_pnl)};background:{pnl_bg};padding:2px 8px;border-radius:20px;">{_sign(daily_pnl)}&euro;{daily_pnl:,.2f} ({_sign(daily_pct)}{daily_pct:.2f}%) today</span>
+      </td>
+      <td style="vertical-align:top;text-align:right;width:120px;">
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.04em;text-transform:uppercase;">Drawdown</p>
+        <p style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:{_pc(drawdown)};margin:0;">{drawdown:.2f}%</p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- metric boxes: 2x2 grid -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:18px;">
+    <tr>
+      {_metric_cell("ITD RETURN", f"{_sign(itd_pct)}{itd_pct:.2f}%", _pc(itd_pct))}
+      {_metric_cell("YTD", f"{_sign(ytd_pct)}{ytd_pct:.2f}%", _pc(ytd_pct))}
+    </tr>
+    <tr>
+      {_metric_cell("REALISED VOL", f"{vol:.2f}%")}
+      {_metric_cell("SHARPE 252d", f"{sharpe:.2f}")}
+    </tr>
+  </table>
+
+  <!-- attribution -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border-top:1px solid #f0f0f0;">
+    <tr><td style="padding-top:14px;">
+      <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">Attribution &mdash; Today</p>
+      {attrib}
+      {legend}
+    </td></tr>
+  </table>
+
+</div>
+</td></tr>
+</table>"""
+
+    except Exception as e:                              # noqa: BLE001
+        traceback.print_exc()
+        return (f"<p style='font-family:Arial,sans-serif;font-size:13px;"
+                f"color:#888888;padding:16px;'>(Portfolio unavailable: {e})</p>")
 
 
 if __name__ == "__main__":
-    main(WORKBOOK_PATH)
+    # quick local check: prints the HTML fragment
+    print(build_portfolio_html())
+    
