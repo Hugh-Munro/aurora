@@ -3,13 +3,13 @@ date,week,day,location,session_type,session_name,details,distance_km,target_pace
 2026-05-23,1,Sat,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 4x10, Dips 4x12, Table rows 4x12, Pistol squat progressions 3x6 each, Plank 3x45s, Hollow body hold 3x30s",,,,
 2026-05-24,1,Sun,waterford,rest,Rest + Mobility,"Hip flexor stretch, pigeon pose, glute activation 15min",,,,
 2026-05-25,2,Mon,waterford,run,Interval Run,WU 2km easy. 5x400m @3:45/km with 90s walk recovery. CD 1km easy.,5,3:45/km intervals,Z4,
-2026-05-26,2,Tue,waterford,bodyweight,Bodyweight Upper Push,Pike push ups 4x12, Dips 4x12, Diamond push ups 3x10, Shoulder taps 3x20," Core circuit 3 rounds,,,-,"
-2026-05-27,2,Wed,waterford,rest,Rest + Mobility,Hip flexor stretch, pigeon pose 15min,,,"-,"
-2026-05-28,2,Thu,waterford,bodyweight,Bodyweight Pull Focus,Table rows 4x12, Dead hangs 3x30s, Plank 3x45s, Hollow body 3x30s,",,-,"
-2026-05-29,2,Fri,waterford,run,Easy Run,Easy conversational run.,6,5:40-6:00/km,Z2,
-2026-05-30,2,Sat,waterford,run,Long Easy Run,Long slow conversational run. No pressure on pace.,9,5:40-6:00/km,Z2,
-2026-05-31,2,Sun,waterford,rest,Rest + Mobility,Full body stretch, foam roll hips and quads 20min,,,"-,"
-2026-06-01,3,Mon,dublin,gym,Push A,Bench press 4x6 @70kg, OHP 4x6 @45kg, Incline DB press 3x10 @30kg, Cable lateral raise 3x12," Tricep pushdown 3x12, Face pulls 3x15,,,-,"
+2026-05-26,2,Tue,waterford,bodyweight,Bodyweight Upper Push,"""Pike push ups 4x12 | Dips 4x12 | Diamond push ups 3x10 | Shoulder taps 3x20 | Core circuit 3 rounds""",,,"""",",-,,,-,"""
+2026-05-27,2,Wed,waterford,rest,Rest + Mobility,"""Hip flexor stretch | pigeon pose 15min""",,,,"""-,"""
+2026-05-28,2,Thu,waterford,bodyweight,Bodyweight Pull Focus,"""Table rows 4x12 | Dead hangs 3x30s | Plank 3x45s | Hollow body 3x30s""",,,"""",",-,"""
+2026-05-29,2,Fri,waterford,run,Easy Run,"""Easy conversational run.""",6,"""5:40-6:00/km""",Z2,
+2026-05-30,2,Sat,waterford,run,Long Easy Run,"""Long slow conversational run. No pressure on pace.""",8,"""5:40-6:00/km""",Z2,
+2026-05-31,2,Sun,waterford,rest,Rest + Mobility,"""Full body stretch | foam roll hips and quads 20min""",,,,"""-,"""
+2026-06-01,3,Mon,dublin,gym,Push A,"""Bench press 4x6 @70kg | OHP 4x6 @45kg | Incline DB press 3x10 @30kg | Cable lateral raise 3x12 | Tricep pushdown 3x12"," Face pulls 3x15""",,,""",,-,-,"""
 2026-06-02,3,Tue,dublin,run,Threshold Run,WU 2km easy. 2x8min @4:30-4:45/km with 3min jog recovery. CD 2km easy.,8,4:30-4:45/km,Z3-Z4,
 2026-06-03,3,Wed,dublin,gym,Pull A,"Hex bar deadlift 4x5 @80kg, Barbell row 4x8 @50kg, Weighted pull ups 4x4 @5kg, DB curl 3x12, Cable row 3x12",,,,
 2026-06-04,3,Thu,dublin,rest,Rest + Mobility,"Hip flexor stretch, pigeon pose 15min",,,,
