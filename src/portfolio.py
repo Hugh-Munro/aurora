@@ -45,7 +45,7 @@ RED = "#993C1D"
 INK = "#1a1a1a"
 MUTE = "#888888"
 CARD_BG = "#f7f7f5"
-COLOURS = {"Equity": "#5DCAA5", "Alternatives": "#0F6E56", "Fixed Income": "#B0C4B1"}
+COLOURS = {"Equities": "#5DCAA5", "Alternatives": "#0F6E56", "Fixed Income": "#B0C4B1"}
 
 
 # ==========================================================================
@@ -251,43 +251,80 @@ def _metric_cell(label: str, value: str, colour: str = INK) -> str:
         f"</div></td>"
     )
 
-
 def attribution_bars(attribution: dict) -> str:
-    """Vertical column chart of per-asset-class daily P&L %.
-    Each column: bar (height encodes |pct|) above a label and value.
-    Table-cell construction so it renders in Gmail."""
     if not attribution:
         return ""
     max_abs = max(
         max(abs(d["pnl_pct"]) for d in attribution.values()),
         0.5,
     )
-    max_h = 90                                           # px, tallest bar
-    cells = []
+    max_h = 90
+    MIN_BAR_FOR_LABEL = 20
+
+    pos_cells = []
+    neg_cells = []
+    label_cells = []
+
     for ac, d in attribution.items():
         pct = d["pnl_pct"]
+        pnl_eur = d["pnl_eur"]
         colour = RED if pct < 0 else COLOURS.get(ac, GREEN)
         h = max(3, round(abs(pct) / max_abs * max_h))
-        cells.append(
-            f"<td style='vertical-align:bottom;text-align:center;"
-            f"padding:0 6px;width:33%;'>"
-            # value above the bar
-            f"<p style='font-family:Arial,sans-serif;font-size:11px;"
-            f"font-weight:bold;color:{colour};margin:0 0 4px 0;'>"
-            f"{_sign(pct)}{pct:.2f}%</p>"
-            # the bar itself
-            f"<div style='height:{max_h - h}px;font-size:1px;line-height:1px;'>"
-            f"&nbsp;</div>"
-            f"<div style='height:{h}px;background:{colour};border-radius:3px;"
-            f"font-size:1px;line-height:1px;'>&nbsp;</div>"
-            # label under the bar
-            f"<p style='font-family:Arial,sans-serif;font-size:11px;"
-            f"color:{MUTE};margin:6px 0 0 0;'>{ac}</p>"
+        sign_pct = "+" if pct >= 0 else "-"
+        sign_eur = "+" if pnl_eur >= 0 else "-"
+        pct_str = f"{sign_pct}{abs(pct):.2f}%"
+        eur_str = f"{sign_eur}&euro;{abs(pnl_eur):,.2f}"
+        text_colour = "#E1F5EE" if colour == GREEN else "#085041"
+        eur_inside = h >= MIN_BAR_FOR_LABEL
+
+        label_cells.append(
+            f"<td style='text-align:center;padding:6px 6px 0 6px;width:33%;'>"
+            f"<p style='font-family:Arial,sans-serif;font-size:11px;color:{MUTE};margin:0;'>{ac}</p>"
             f"</td>"
         )
+
+        if pct >= 0:
+            pos_cells.append(
+                f"<td style='vertical-align:bottom;text-align:center;padding:0 6px;width:33%;'>"
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;font-weight:bold;"
+                f"color:{colour};margin:0 0 4px 0;'>{pct_str}</p>"
+                + (f"<p style='font-family:Arial,sans-serif;font-size:10px;font-weight:bold;"
+                   f"color:{colour};margin:0 0 4px 0;'>{eur_str}</p>" if not eur_inside else "")
+                + f"<div style='height:{h}px;background:{colour};border-radius:3px 3px 0 0;"
+                f"font-size:10px;font-weight:bold;color:{text_colour};"
+                f"text-align:center;padding-top:4px;'>"
+                + (eur_str if eur_inside else "&nbsp;")
+                + f"</div>"
+                f"</td>"
+            )
+            neg_cells.append(f"<td style='width:33%;padding:0 6px;height:1px;'>&nbsp;</td>")
+        else:
+            pos_cells.append(f"<td style='width:33%;padding:0 6px;vertical-align:bottom;'>"
+                             f"<div style='height:{max_h}px;font-size:1px;line-height:1px;'>&nbsp;</div>"
+                             f"</td>")
+            neg_cells.append(
+                f"<td style='vertical-align:top;text-align:center;padding:0 6px;width:33%;'>"
+                f"<div style='height:{h}px;background:{colour};border-radius:0 0 3px 3px;"
+                f"font-size:1px;line-height:1px;'>&nbsp;</div>"
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;font-weight:bold;"
+                f"color:{colour};margin:4px 0 0 0;'>{pct_str}</p>"
+                f"<p style='font-family:Arial,sans-serif;font-size:10px;font-weight:bold;"
+                f"color:{colour};margin:2px 0 0 0;'>{eur_str}</p>"
+                f"</td>"
+            )
+
+    zero = (
+        f"<tr><td colspan='3' style='height:1px;background:#e0e0e0;"
+        f"font-size:1px;line-height:1px;padding:0;'></td></tr>"
+    )
+
     return (
         f"<table role='presentation' cellpadding='0' cellspacing='0' border='0' "
-        f"style='width:100%;border-collapse:collapse;'><tr>{''.join(cells)}</tr>"
+        f"style='width:100%;border-collapse:collapse;'>"
+        f"<tr style='vertical-align:bottom;height:{max_h}px;'>{''.join(pos_cells)}</tr>"
+        f"{zero}"
+        f"<tr style='vertical-align:top;'>{''.join(neg_cells)}</tr>"
+        f"<tr>{''.join(label_cells)}</tr>"
         f"</table>"
     )
 
@@ -366,21 +403,6 @@ def build_portfolio_html() -> str:
         pnl_bg = "#E1F5EE" if daily_pnl >= 0 else "#FAECE7"
         attrib = attribution_bars(attribution)
 
-        legend_cells = []
-        for ac, d in attribution.items():
-            c = RED if d["pnl_eur"] < 0 else COLOURS.get(ac, GREEN)
-            s = "+" if d["pnl_eur"] >= 0 else ""
-            legend_cells.append(
-                f"<td style='padding:0 14px 0 0;font-family:Arial,sans-serif;"
-                f"font-size:11px;color:{MUTE};white-space:nowrap;'>"
-                f"<span style='display:inline-block;width:8px;height:8px;"
-                f"background:{c};margin-right:5px;'>&nbsp;</span>"
-                f"{ac} {s}\u20ac{abs(d['pnl_eur']):,.2f}</td>"
-            )
-        legend = (f"<table role='presentation' cellpadding='0' cellspacing='0' "
-                  f"border='0' style='margin-top:10px;'><tr>"
-                  f"{''.join(legend_cells)}</tr></table>")
-
         warn = ""
         if missing:
             warn = (f"<p style='font-family:Arial,sans-serif;font-size:10px;"
@@ -421,9 +443,8 @@ def build_portfolio_html() -> str:
   <!-- attribution -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border-top:1px solid #f0f0f0;">
     <tr><td style="padding-top:14px;">
-      <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">Attribution &mdash; Today</p>
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">Asset Class Attribution</p>
       {attrib}
-      {legend}
     </td></tr>
   </table>
 
