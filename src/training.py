@@ -7,6 +7,14 @@ import requests
 
 PLAN_PATH = Path(__file__).resolve().parent.parent / "data" / "training_plan.csv"
 
+ZONE_LABELS = {
+    "Z1": "Zone 1",
+    "Z2": "Zone 2",
+    "Z3": "Zone 3",
+    "Z4": "Zone 4",
+    "Z5": "Zone 5",
+    "Z3-Z4": "Zone 3-4",
+}
 
 def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
     today = date.today().isoformat()
@@ -58,6 +66,7 @@ def get_weather(location: str) -> str:
         return f"{description} — {min_temp}–{max_temp}°C{rain_str}"
     except Exception:
         return ""
+    
 
 def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     if row is None:
@@ -71,17 +80,17 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     location = row.get("location", "").capitalize()
 
     PILL_STYLES = {
-            "run": {
-                "easy run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - EASY"),
-                "long easy run": ("background:#E1F5EE; color:#0F6E56;", "RUN - LONG"),
-                "interval run":  ("background:#FAEEDA; color:#633806;", "RUN - INTERVALS"),
-                "threshold run": ("background:#FAC775; color:#412402;", "RUN - THRESHOLD"),
-                "default":       ("background:#E1F5EE; color:#0F6E56;", "RUN"),
-            },
-            "gym":        ("background:#F1EFE8; color:#444441;", "GYM"),
-            "bodyweight": ("background:#E1F5EE; color:#085041;", "BODYWEIGHT"),
-            "rest":       ("background:#D3D1C7; color:#2C2C2A;", "REST"),
-        }
+        "run": {
+            "easy run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - EASY"),
+            "long run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - LONG"),
+            "intervals":     ("background:#FAEEDA; color:#633806;", "RUN - INTERVALS"),
+            "threshold":     ("background:#FAC775; color:#412402;", "RUN - THRESHOLD"),
+            "default":       ("background:#E1F5EE; color:#0F6E56;", "RUN"),
+        },
+        "gym":        ("background:#F1EFE8; color:#444441;", "GYM"),
+        "bodyweight": ("background:#E1F5EE; color:#085041;", "BODYWEIGHT"),
+        "rest":       ("background:#D3D1C7; color:#2C2C2A;", "REST"),
+    }
 
     session_name_lower = session_name.lower()
     if session_type == "run":
@@ -114,7 +123,7 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     if session_type == "run":
         distance = row.get("distance_km", "")
         pace = row.get("target_pace", "")
-        hr_zone = row.get("target_hr_zone", "")
+        hr_zone = ZONE_LABELS.get(row.get("target_hr_zone", "").strip(), row.get("target_hr_zone", ""))
 
         def metric_card(label, value):
             return (
