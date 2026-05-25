@@ -1,10 +1,12 @@
 from __future__ import annotations
-
 import csv
 import os
+import smtplib
 import subprocess
 import time
 from datetime import date, datetime, timedelta
+from email.message import EmailMessage
+from html import escape
 from pathlib import Path
 
 import requests
@@ -17,16 +19,16 @@ CLIENT_ID = os.getenv("STRAVA_CLIENT_ID")
 CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 STRAVA_TOKEN_FILE = "strava_tokens.json"
-
 PLAN_PATH = Path("data/training_plan.csv")
 NOTES_PATH = Path("data/notes.txt")
-
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
 MAIL_FROM = os.getenv("MAIL_FROM", "")
 MAIL_TO = os.getenv("MAIL_TO", "")
+
+DAY_NAMES = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
 
 
 # --- Strava ---
@@ -49,7 +51,10 @@ def refresh_if_needed(tokens):
             "grant_type": "refresh_token",
             "refresh_token": tokens["refresh_token"],
         })
-        tokens = response.json()
+        data = response.json()
+        if "access_token" not in data:
+            raise RuntimeError(f"Strava token refresh failed: {data}")
+        tokens = data
         if not os.getenv("STRAVA_REFRESH_TOKEN"):
             with open(STRAVA_TOKEN_FILE, "w") as f:
                 json.dump(tokens, f)
@@ -63,8 +68,12 @@ def get_strava_activities(access_token: str, days: int = 7) -> list[dict]:
         headers={"Authorization": f"Bearer {access_token}"},
         params={"after": after, "per_page": 50},
     )
+    data = response.json()
+    if not isinstance(data, list):
+        print(f"Strava API error: {data}")
+        return []
     activities = []
-    for a in response.json():
+    for a in data:
         activities.append({
             "date": a["start_date_local"][:10],
             "type": a["type"],
@@ -100,17 +109,20 @@ def write_plan(rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
+def parse_date(date_str: str) -> date | None:
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
 def get_week_plan(rows: list[dict], start: date, end: date) -> list[dict]:
     result = []
     for row in rows:
-        try:
-            d = datetime.strptime(row["date"], "%d/%m/%Y").date()
-        except ValueError:
-            try:
-                d = datetime.strptime(row["date"], "%Y-%m-%d").date()
-            except ValueError:
-                continue
-        if start <= d <= end:
+        d = parse_date(row["date"])
+        if d and start <= d <= end:
             result.append(row)
     return result
 
@@ -121,6 +133,36 @@ def read_notes() -> str:
     if not NOTES_PATH.exists():
         return "No notes."
     return NOTES_PATH.read_text(encoding="utf-8").strip() or "No notes."
+
+
+# --- Helpers ---
+
+def format_row_brief(row: dict) -> str:
+    """For unchanged rows: just session name, plus distance for runs."""
+    session_name = row.get("session_name", "").strip()
+    dist = row.get("distance_km", "").strip()
+    session_type = row.get("session_type", "").strip().lower()
+    if dist and session_type == "run":
+        try:
+            return f"{session_name} · {int(round(float(dist)))}km"
+        except ValueError:
+            pass
+    return session_name
+
+
+def format_row_full(row: dict) -> str:
+    """For modified rows: distance plus details."""
+    parts = []
+    dist = row.get("distance_km", "").strip()
+    if dist:
+        try:
+            parts.append(f"{int(round(float(dist)))}km")
+        except ValueError:
+            parts.append(dist)
+    details = row.get("details", "").strip().strip('"')
+    if details:
+        parts.append(details)
+    return " · ".join(parts) if parts else ""
 
 
 # --- Gemini ---
@@ -154,7 +196,7 @@ def build_prompt(
             f"target_hr_zone={row.get('target_hr_zone', '')} | sets_reps={row.get('sets_reps', '')}\n"
         )
 
-    prompt = f"""You are a conservative running and fitness coach reviewing an athlete's training week.
+    return f"""You are a conservative running and fitness coach reviewing an athlete's training week.
 
 {strava_text}
 {plan_text}
@@ -166,12 +208,14 @@ ATHLETE NOTES:
 RULES — follow these strictly:
 - Only modify next week's sessions, never past dates
 - Maximum distance change is 15% up or down
+- Always use whole numbers for distances (e.g. 8km not 7.65km)
 - You may swap session order within the week but not change session types
 - You may substitute gym for bodyweight if location is waterford or holiday
 - Do not increase intensity if this week was underperformed
 - Do not add new sessions
 - Keep all changes minimal and conservative
 - Preserve the exact CSV field names and structure
+- Use commas to separate exercises in the details field, never pipe characters or quotes
 
 Respond with ONLY two sections, nothing else:
 
@@ -184,7 +228,6 @@ date,week,day,location,session_type,session_name,details,distance_km,target_pace
 
 Do not include any other text, explanation, or markdown formatting outside these two sections.
 """
-    return prompt
 
 
 def parse_gemini_response(response_text: str) -> tuple[str, list[dict]]:
@@ -200,82 +243,163 @@ def parse_gemini_response(response_text: str) -> tuple[str, list[dict]]:
 
     if "UPDATED_PLAN:" in response_text:
         plan_part = response_text.split("UPDATED_PLAN:")[1].strip()
-        lines = [l.strip() for l in plan_part.splitlines() if l.strip()]
+        lines = [ln.strip() for ln in plan_part.splitlines() if ln.strip()]
         if lines:
             headers = [h.strip() for h in lines[0].split(",")]
             for line in lines[1:]:
                 values = line.split(",", len(headers) - 1)
                 if len(values) == len(headers):
-                    updated_rows.append(dict(zip(headers, values)))
+                    row = dict(zip(headers, values))
+                    dist = row.get("distance_km", "").strip()
+                    if dist:
+                        try:
+                            row["distance_km"] = str(int(round(float(dist))))
+                        except ValueError:
+                            pass
+                    updated_rows.append(row)
 
     return summary, updated_rows
+
+
+def find_true_changes(updated_rows: list[dict], original_rows: list[dict]) -> list[dict]:
+    """Return only rows where meaningful content actually changed."""
+    original_lookup = {r["date"]: r for r in original_rows}
+    IGNORE_FIELDS = {"sets_reps"}
+    changed = []
+    for row in updated_rows:
+        orig = original_lookup.get(row["date"])
+        if not orig:
+            changed.append(row)
+            continue
+        for key, val in row.items():
+            if key in IGNORE_FIELDS:
+                continue
+            orig_val = orig.get(key, "").strip()
+            new_val = val.strip()
+            if orig_val != new_val:
+                changed.append(row)
+                break
+    return changed
 
 
 # --- Git ---
 
 def git_commit_and_push(message: str) -> None:
     try:
+        subprocess.run(["git", "config", "user.name", "github-actions"], check=True)
+        subprocess.run(["git", "config", "user.email", "github-actions@github.com"], check=True)
         subprocess.run(["git", "add", "data/training_plan.csv"], check=True)
+        result = subprocess.run(["git", "diff", "--cached", "--quiet"])
+        if result.returncode == 0:
+            print("No changes to commit.")
+            return
         subprocess.run(["git", "commit", "-m", message], check=True)
         subprocess.run(["git", "push"], check=True)
+        print("Plan committed and pushed.")
     except subprocess.CalledProcessError as e:
         print(f"Git error: {e}")
 
 
 # --- Email ---
 
-def send_review_email(summary: str, changes: list[dict]) -> None:
-    import smtplib
-    from email.message import EmailMessage
-    from html import escape
-
+def send_review_email(
+    summary: str,
+    updated_rows: list[dict],
+    final_next_week: list[dict],
+    original_next_week: list[dict],
+) -> None:
     today_str = date.today().strftime("%a %d %b %Y")
     subject = f"Weekly Training Review: {today_str}"
 
-    # Plain text
-    plain = f"Weekly Training Review\n\n{summary}\n"
-    if changes:
-        plain += "\nChanges made to next week:\n"
-        for row in changes:
-            plain += f"  {row['date']} | {row['session_name']} | {row.get('details', '')}\n"
-    else:
-        plain += "\nNo changes made to next week's plan."
+    original_lookup = {r["date"]: r for r in original_next_week}
+    changed_dates = {r["date"] for r in updated_rows}
 
-    # HTML
+    # Plain text
+    plain = f"Weekly Training Review\n\n{summary}\n\nNext week:\n"
+    for row in final_next_week:
+        d = parse_date(row["date"])
+        day_name = DAY_NAMES.get(d.weekday(), "") if d else ""
+        modified = row["date"] in changed_dates
+        prefix = "[MODIFIED] " if modified else ""
+        plain += f"  {prefix}{day_name} {row['date']} | {format_row_brief(row)}\n"
+
+    # HTML rows
+    rows_html = ""
+    for row in final_next_week:
+        d = parse_date(row["date"])
+        day_name = DAY_NAMES.get(d.weekday(), "") if d else ""
+        try:
+            date_num = d.strftime("%-d %b") if d else row["date"]
+        except ValueError:
+            date_num = d.strftime("%d %b").lstrip("0") if d else row["date"]
+
+        modified = row["date"] in changed_dates
+        orig = original_lookup.get(row["date"])
+
+        if modified:
+            details = format_row_full(row)
+            orig_details = format_row_full(orig) if orig else ""
+            strikethrough = (
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;color:#888888;"
+                f"margin:0 0 3px 0;text-decoration:line-through;'>{escape(orig_details)}</p>"
+                if orig_details and orig_details != details else ""
+            )
+            rows_html += (
+                f"<tr>"
+                f"<td style='padding:6px 10px 6px 0;vertical-align:top;width:44px;text-align:center;'>"
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;font-weight:bold;color:#0F6E56;margin:0;'>{day_name}</p>"
+                f"<p style='font-family:Arial,sans-serif;font-size:10px;color:#0F6E56;margin:0;'>{date_num}</p>"
+                f"</td>"
+                f"<td style='padding:6px 0;'>"
+                f"<div style='padding:10px 12px;background:#E1F5EE;border-radius:8px;'>"
+                f"<table role='presentation' cellpadding='0' cellspacing='0' border='0' style='width:100%;border-collapse:collapse;margin-bottom:4px;'>"
+                f"<tr>"
+                f"<td style='font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#085041;'>{escape(row['session_name'])}</td>"
+                f"<td style='text-align:right;'><span style='font-family:Arial,sans-serif;font-size:10px;color:#0F6E56;"
+                f"background:#ffffff;border:0.5px solid #0F6E56;padding:2px 7px;border-radius:20px;'>&#10022; modified</span></td>"
+                f"</tr>"
+                f"</table>"
+                f"{strikethrough}"
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;color:#085041;margin:0;'>{escape(details)}</p>"
+                f"</div>"
+                f"</td>"
+                f"</tr>"
+                f"<tr><td colspan='2' style='height:6px;'></td></tr>"
+            )
+        else:
+            rows_html += (
+                f"<tr>"
+                f"<td style='padding:6px 10px 6px 0;vertical-align:top;width:44px;text-align:center;'>"
+                f"<p style='font-family:Arial,sans-serif;font-size:11px;font-weight:bold;color:#1a1a1a;margin:0;'>{day_name}</p>"
+                f"<p style='font-family:Arial,sans-serif;font-size:10px;color:#888888;margin:0;'>{date_num}</p>"
+                f"</td>"
+                f"<td style='padding:6px 0;'>"
+                f"<div style='padding:10px 12px;background:#f7f7f5;border-radius:8px;'>"
+                f"<p style='font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:#1a1a1a;margin:0;'>{escape(format_row_brief(row))}</p>"
+                f"</div>"
+                f"</td>"
+                f"</tr>"
+                f"<tr><td colspan='2' style='height:6px;'></td></tr>"
+            )
+
     html = (
-        "<div style='max-width:600px; margin:0 auto; padding:1rem; font-family:Arial,sans-serif;'>"
-        "<div style='border-left:3px solid #0F6E56; padding-left:1rem; margin-bottom:2rem;'>"
-        "<p style='font-size:12px; color:#888; margin:0 0 2px 0; letter-spacing:0.08em; text-transform:uppercase;'>Weekly Review</p>"
-        f"<h1 style='font-size:22px; font-weight:500; margin:0; color:#1a1a1a;'>{escape(today_str)}</h1>"
+        "<div style='max-width:600px;margin:0 auto;padding:1rem;font-family:Arial,sans-serif;'>"
+        "<div style='border-left:3px solid #0F6E56;padding-left:1rem;margin-bottom:2rem;'>"
+        "<p style='font-size:12px;color:#888;margin:0 0 2px 0;letter-spacing:0.08em;text-transform:uppercase;'>Weekly Review</p>"
+        f"<h1 style='font-size:22px;font-weight:500;margin:0;color:#1a1a1a;'>{escape(today_str)}</h1>"
         "</div>"
-        "<div style='background:#ffffff; border:1px solid #e0e0e0; border-radius:12px; padding:20px; margin-bottom:16px;'>"
-        "<p style='font-size:11px; color:#888; margin:0 0 10px 0; letter-spacing:0.08em; text-transform:uppercase;'>Coach Summary</p>"
-        f"<p style='font-size:14px; color:#1a1a1a; line-height:1.7; margin:0;'>{escape(summary)}</p>"
+        "<div style='background:#ffffff;border:1px solid #e0e0e0;border-radius:12px;padding:20px;margin-bottom:16px;'>"
+        "<p style='font-size:11px;color:#888;margin:0 0 10px 0;letter-spacing:0.08em;text-transform:uppercase;'>Coach Summary</p>"
+        f"<p style='font-size:14px;color:#1a1a1a;line-height:1.7;margin:0;'>{escape(summary)}</p>"
+        "</div>"
+        "<div style='background:#ffffff;border:1px solid #e0e0e0;border-radius:12px;padding:20px;'>"
+        "<p style='font-size:11px;color:#888;margin:0 0 14px 0;letter-spacing:0.08em;text-transform:uppercase;'>Next week</p>"
+        f"<table role='presentation' cellpadding='0' cellspacing='0' border='0' style='width:100%;border-collapse:collapse;'>"
+        f"{rows_html}"
+        "</table>"
+        "</div>"
         "</div>"
     )
-
-    if changes:
-        html += (
-            "<div style='background:#ffffff; border:1px solid #e0e0e0; border-radius:12px; padding:20px;'>"
-            "<p style='font-size:11px; color:#888; margin:0 0 12px 0; letter-spacing:0.08em; text-transform:uppercase;'>Plan Changes</p>"
-        )
-        for row in changes:
-            html += (
-                "<div style='display:flex; justify-content:space-between; padding:8px 10px; "
-                "background:#f7f7f5; border-radius:6px; margin-bottom:6px;'>"
-                f"<span style='font-size:13px; color:#1a1a1a;'>{escape(row['date'])} — {escape(row['session_name'])}</span>"
-                f"<span style='font-size:12px; color:#666;'>{escape(row.get('details', ''))[:60]}</span>"
-                "</div>"
-            )
-        html += "</div>"
-    else:
-        html += (
-            "<div style='background:#f7f7f5; border-radius:12px; padding:16px; text-align:center;'>"
-            "<p style='font-size:13px; color:#888; margin:0;'>No changes made to next week's plan.</p>"
-            "</div>"
-        )
-
-    html += "</div>"
 
     msg = EmailMessage()
     msg["From"] = MAIL_FROM
@@ -287,7 +411,6 @@ def send_review_email(summary: str, changes: list[dict]) -> None:
     with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as s:
         s.login(SMTP_USER, SMTP_PASS)
         s.send_message(msg)
-
     print("Review email sent.")
 
 
@@ -305,7 +428,7 @@ def main() -> None:
     # Plan
     all_rows = read_plan()
     today = date.today()
-    week_start = today - timedelta(days=today.weekday() + 1)  # last Monday
+    week_start = today - timedelta(days=today.weekday() + 1)
     week_end = today
     next_week_start = today + timedelta(days=1)
     next_week_end = today + timedelta(days=7)
@@ -316,6 +439,9 @@ def main() -> None:
     if not next_week:
         print("No next week plan found. Exiting.")
         return
+
+    # Capture originals before any modification
+    original_next_week = [dict(r) for r in next_week]
 
     # Notes
     notes = read_notes()
@@ -329,6 +455,7 @@ def main() -> None:
         contents=prompt,
     )
     summary, updated_rows = parse_gemini_response(response.text)
+    updated_rows = find_true_changes(updated_rows, original_next_week)
     print(f"Summary: {summary}")
     print(f"Updated rows: {len(updated_rows)}")
 
@@ -344,12 +471,15 @@ def main() -> None:
                 new_plan.append(row)
         write_plan(new_plan)
         print("Plan updated.")
+        final_next_week = get_week_plan(new_plan, next_week_start, next_week_end)
         git_commit_and_push(f"Weekly review update {today.isoformat()}")
     else:
         print("No plan changes.")
+        final_next_week = next_week
+        original_next_week = next_week
 
     # Email
-    send_review_email(summary, updated_rows)
+    send_review_email(summary, updated_rows, final_next_week, original_next_week)
 
 
 if __name__ == "__main__":
