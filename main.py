@@ -372,28 +372,28 @@ def main() -> int:
         body_html=body_html,
     )
 
-    # # ---- Send mean message ----
-    # ross_to = "david.mcloughlin@ucdconnect.ie"
-    # mean_cc = "ross.cashin@ucdconnect.ie"
-    # mean_text = make_insult()
-    # mean_subject = f"Mean Message: {today_str}"
-    # mean_html = (
-    #     "<div style='font-family:Arial,sans-serif;'>"
-    #     f"<p style='margin:0; font-size:16px;'>{html_escape(mean_text)}</p>"
-    #     "</div>"
-    # )
-    # send_email_smtp(
-    #     smtp_host=smtp_host,
-    #     smtp_port=smtp_port,
-    #     smtp_user=smtp_user,
-    #     smtp_pass=smtp_pass,
-    #     mail_from=mail_from,
-    #     mail_to=ross_to,
-    #     subject=mean_subject,
-    #     body_text=mean_text,
-    #     body_html=mean_html,
-    #     mail_cc=mean_cc,
-    # )
+    # ---- Send mean message ----
+    ross_to = "david.mcloughlin@ucdconnect.ie"
+    mean_cc = "ross.cashin@ucdconnect.ie"
+    mean_text = make_insult()
+    mean_subject = f"Mean Message: {today_str}"
+    mean_html = (
+        "<div style='font-family:Arial,sans-serif;'>"
+        f"<p style='margin:0; font-size:16px;'>{html_escape(mean_text)}</p>"
+        "</div>"
+    )
+    send_email_smtp(
+        smtp_host=smtp_host,
+        smtp_port=smtp_port,
+        smtp_user=smtp_user,
+        smtp_pass=smtp_pass,
+        mail_from=mail_from,
+        mail_to=ross_to,
+        subject=mean_subject,
+        body_text=mean_text,
+        body_html=mean_html,
+        mail_cc=mean_cc,
+    )
 
     return 0
 
