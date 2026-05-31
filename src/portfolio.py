@@ -341,7 +341,7 @@ def build_portfolio_html() -> str:
         fx_tickers = [f"{BASE_CCY}{c}=X" for c in needed_ccys if c != BASE_CCY]
         all_tickers = asset_tickers + fx_tickers
 
-        end = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        end = datetime.today().strftime("%Y-%m-%d")
         raw = _download_with_retry(all_tickers, start=HISTORY_START, end=end)
         close = _extract_close(raw, all_tickers)
         missing = [t for t in asset_tickers if t not in close.columns]
@@ -419,7 +419,7 @@ def build_portfolio_html() -> str:
       <td style="vertical-align:top;">
         <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.08em;text-transform:uppercase;">Portfolio NAV</p>
         <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:{INK};margin:0 0 4px 0;">&euro;{nav_today:,.2f}</p>
-        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:{_pc(daily_pnl)};background:{pnl_bg};padding:2px 8px;border-radius:20px;">{_sign(daily_pnl)}&euro;{daily_pnl:,.2f} ({_sign(daily_pct)}{daily_pct:.2f}%) today</span>
+        <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:{_pc(daily_pnl)};background:{pnl_bg};padding:2px 8px;border-radius:20px;">{_sign(daily_pnl)}&euro;{daily_pnl:,.2f} ({_sign(daily_pct)}{daily_pct:.2f}%) yesterday</span>
       </td>
       <td style="vertical-align:top;text-align:right;width:120px;">
         <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.04em;text-transform:uppercase;">Drawdown</p>
