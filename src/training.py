@@ -1,22 +1,63 @@
+"""
+src/training.py
+---------------
+Reads today's training plan row from the CSV and formats it for the email.
+Public entry points:
+  get_today_plan(plan_path) -> dict | None
+  format_plan_for_email(row) -> tuple[str, str]  # (plain, html)
+"""
 from __future__ import annotations
 
 import csv
 from datetime import date
 from pathlib import Path
-import requests
 
-PLAN_PATH = Path(__file__).resolve().parent.parent / "data" / "training_plan.csv"
+from src.config import TRAINING_PLAN_PATH
 
-ZONE_LABELS = {
-    "Z1": "Zone 1",
-    "Z2": "Zone 2",
-    "Z3": "Zone 3",
-    "Z4": "Zone 4",
-    "Z5": "Zone 5",
+# -- Constants ----------------------------------------------------------------
+
+ZONE_LABELS: dict[str, str] = {
+    "Z1":    "Zone 1",
+    "Z2":    "Zone 2",
+    "Z3":    "Zone 3",
+    "Z4":    "Zone 4",
+    "Z5":    "Zone 5",
     "Z3-Z4": "Zone 3-4",
 }
 
-def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
+# Pill styles: session_type -> (css, label)
+# For "run", session_name is used as a sub-key.
+PILL_STYLES: dict[str, object] = {
+    "run": {
+        "easy run":  ("background:#E1F5EE; color:#0F6E56;", "RUN - EASY"),
+        "long run":  ("background:#E1F5EE; color:#0F6E56;", "RUN - LONG"),
+        "intervals": ("background:#FAEEDA; color:#633806;", "RUN - INTERVALS"),
+        "threshold": ("background:#FAC775; color:#412402;", "RUN - THRESHOLD"),
+        "default":   ("background:#E1F5EE; color:#0F6E56;", "RUN"),
+    },
+    "gym":        ("background:#F1EFE8; color:#444441;", "GYM"),
+    "bodyweight": ("background:#E1F5EE; color:#085041;", "BODYWEIGHT"),
+    "rest":       ("background:#D3D1C7; color:#2C2C2A;", "REST"),
+}
+
+
+# -- Helpers ------------------------------------------------------------------
+
+def _metric_card(label: str, value: str) -> str:
+    return (
+        "<td style='width:33%; padding-right:8px;'>"
+        "<div style='background:#f7f7f5; border-radius:8px; padding:10px 12px;'>"
+        f"<p style='font-size:11px; color:#888; margin:0 0 4px 0; letter-spacing:0.04em;'>{label}</p>"
+        f"<p style='font-size:18px; font-weight:500; margin:0; color:#1a1a1a;'>{value}</p>"
+        "</div>"
+        "</td>"
+    )
+
+
+# -- Public API ---------------------------------------------------------------
+
+def get_today_plan(plan_path: Path = TRAINING_PLAN_PATH) -> dict | None:
+    """Return the CSV row matching today's date, or None if not found."""
     today = date.today().isoformat()
     with open(plan_path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
@@ -25,79 +66,33 @@ def get_today_plan(plan_path: Path = PLAN_PATH) -> dict | None:
                 return row
     return None
 
-def get_weather(location: str) -> str:
-    """Fetch today's weather for Dublin or Waterford. Returns a formatted string."""
-    coords = {
-        "dublin": (53.3498, -6.2603),
-        "waterford": (52.2593, -7.1101),
-        "holiday": (53.3498, -6.2603),  # fallback to dublin
-    }
-    lat, lon = coords.get(location.lower(), (53.3498, -6.2603))
-    try:
-        resp = requests.get(
-            "https://api.open-meteo.com/v1/forecast",
-            params={
-                "latitude": lat,
-                "longitude": lon,
-                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
-                "timezone": "Europe/Dublin",
-                "forecast_days": 1,
-            },
-            timeout=5,
-        )
-        data = resp.json()
-        daily = data["daily"]
-        max_temp = round(daily["temperature_2m_max"][0])
-        min_temp = round(daily["temperature_2m_min"][0])
-        precip = daily["precipitation_sum"][0]
-        code = daily["weathercode"][0]
-
-        WMO_CODES = {
-            0: "Clear sky", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-            45: "Foggy", 48: "Icy fog",
-            51: "Light drizzle", 53: "Drizzle", 55: "Heavy drizzle",
-            61: "Light rain", 63: "Rain", 65: "Heavy rain",
-            71: "Light snow", 73: "Snow", 75: "Heavy snow",
-            80: "Light showers", 81: "Showers", 82: "Heavy showers",
-            95: "Thunderstorm",
-        }
-        description = WMO_CODES.get(code, "Mixed conditions")
-        rain_str = f", {precip}mm rain" if precip > 0.2 else ""
-        return f"{description} — {min_temp}–{max_temp}°C{rain_str}"
-    except Exception:
-        return ""
-    
 
 def format_plan_for_email(row: dict | None) -> tuple[str, str]:
+    """Format a training plan row into (plain_text, html) for the email.
+
+    Returns a simple fallback string pair if row is None.
+    """
     if row is None:
         plain = "No session planned for today."
-        html = "<p style='font-size:14px; color:#666;'>No session planned for today.</p>"
+        html  = "<p style='font-size:14px; color:#666;'>No session planned for today.</p>"
         return plain, html
 
     session_type = row.get("session_type", "").lower()
     session_name = row.get("session_name", "")
-    details = row.get("details", "")
-    location = row.get("location", "").capitalize()
+    details      = row.get("details", "")
+    location     = row.get("location", "").capitalize()
 
-    PILL_STYLES = {
-        "run": {
-            "easy run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - EASY"),
-            "long run":      ("background:#E1F5EE; color:#0F6E56;", "RUN - LONG"),
-            "intervals":     ("background:#FAEEDA; color:#633806;", "RUN - INTERVALS"),
-            "threshold":     ("background:#FAC775; color:#412402;", "RUN - THRESHOLD"),
-            "default":       ("background:#E1F5EE; color:#0F6E56;", "RUN"),
-        },
-        "gym":        ("background:#F1EFE8; color:#444441;", "GYM"),
-        "bodyweight": ("background:#E1F5EE; color:#085041;", "BODYWEIGHT"),
-        "rest":       ("background:#D3D1C7; color:#2C2C2A;", "REST"),
-    }
-
-    session_name_lower = session_name.lower()
+    # -- Pill -----------------------------------------------------------------
     if session_type == "run":
         run_styles = PILL_STYLES["run"]
-        pill_style, pill_label = run_styles.get(session_name_lower, run_styles["default"])
+        pill_style, pill_label = run_styles.get(
+            session_name.lower(), run_styles["default"]
+        )
     else:
-        pill_style, pill_label = PILL_STYLES.get(session_type, ("background:#F1EFE8; color:#444441;", session_type.upper()))
+        pill_style, pill_label = PILL_STYLES.get(
+            session_type,
+            ("background:#F1EFE8; color:#444441;", session_type.upper()),
+        )
 
     pill_html = (
         f"<span style='font-size:11px; font-weight:500; padding:3px 10px; "
@@ -120,71 +115,79 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
         "margin-bottom:16px;"
     )
 
+    # -- Body by session type -------------------------------------------------
     if session_type == "run":
         distance = row.get("distance_km", "")
-        pace = row.get("target_pace", "")
-        hr_zone = ZONE_LABELS.get(row.get("target_hr_zone", "").strip(), row.get("target_hr_zone", ""))
-
-        def metric_card(label, value):
-            return (
-                "<td style='width:33%; padding-right:8px;'>"
-                "<div style='background:#f7f7f5; border-radius:8px; padding:10px 12px;'>"
-                f"<p style='font-size:11px; color:#888; margin:0 0 4px 0; letter-spacing:0.04em;'>{label}</p>"
-                f"<p style='font-size:18px; font-weight:500; margin:0; color:#1a1a1a;'>{value}</p>"
-                "</div>"
-                "</td>"
-            )
+        pace     = row.get("target_pace", "")
+        hr_zone  = ZONE_LABELS.get(
+            row.get("target_hr_zone", "").strip(),
+            row.get("target_hr_zone", ""),
+        )
 
         metrics_html = (
             "<table style='width:100%; border-collapse:collapse; margin-bottom:16px;'><tr>"
-            + (metric_card("DISTANCE", f"{distance} km") if distance else "")
-            + (metric_card("TARGET PACE", pace) if pace else "")
-            + (metric_card("HR ZONE", hr_zone) if hr_zone else "")
+            + (distance and _metric_card("DISTANCE", f"{distance} km") or "")
+            + (pace     and _metric_card("TARGET PACE", pace)          or "")
+            + (hr_zone  and _metric_card("HR ZONE", hr_zone)           or "")
             + "</tr></table>"
         )
-
         notes_html = (
             f"<p style='font-size:13px; color:#555; margin:0; "
             f"border-left:2px solid #e0e0e0; padding-left:10px;'>{details}</p>"
         ) if details else ""
 
         body_html = metrics_html + notes_html
-        plain = f"{session_name} ({location})\nDistance: {distance}km | Pace: {pace} | Zone: {hr_zone}\n{details}"
+        plain     = (
+            f"{session_name} ({location})\n"
+            f"Distance: {distance}km | Pace: {pace} | Zone: {hr_zone}\n"
+            f"{details}"
+        )
 
     elif session_type in ("gym", "bodyweight"):
-        exercises = [e.strip() for e in details.split(",") if e.strip()]
-        rows_html = ""
+        exercises  = [e.strip() for e in details.split(",") if e.strip()]
+        rows_html  = ""
         plain_lines = [f"{session_name} ({location})"]
+
         for ex in exercises:
             parts = ex.rsplit("@", 1)
             if len(parts) == 2:
                 name_sets = parts[0].strip()
-                weight = "@ " + parts[1].strip()
+                weight    = "@ " + parts[1].strip()
             else:
                 name_sets = ex
-                weight = ""
+                weight    = ""
+
             set_split = name_sets.rsplit(" ", 1)
             if len(set_split) == 2 and "x" in set_split[1].lower():
-                ex_name = set_split[0]
+                ex_name   = set_split[0]
                 sets_reps = set_split[1]
             else:
-                ex_name = name_sets
+                ex_name   = name_sets
                 sets_reps = ""
+
             display_right = f"{sets_reps} {weight}".strip()
             rows_html += (
                 "<tr>"
-                f"<td style='font-size:13px; color:#1a1a1a; padding:8px 10px; background:#f7f7f5; border-radius:6px;'>{ex_name}</td>"
-                f"<td style='font-size:13px; color:#666; font-weight:500; padding:8px 10px; text-align:right; background:#f7f7f5; border-radius:6px;'>{display_right}</td>"
+                f"<td style='font-size:13px; color:#1a1a1a; padding:8px 10px; "
+                f"background:#f7f7f5; border-radius:6px;'>{ex_name}</td>"
+                f"<td style='font-size:13px; color:#666; font-weight:500; padding:8px 10px; "
+                f"text-align:right; background:#f7f7f5; border-radius:6px;'>{display_right}</td>"
                 "</tr>"
                 "<tr><td colspan='2' style='height:4px;'></td></tr>"
             )
             plain_lines.append(f"  {ex_name} {display_right}")
 
-        body_html = f"<table style='width:100%; border-collapse:separate; border-spacing:0 4px;'>{rows_html}</table>"
+        body_html = (
+            f"<table style='width:100%; border-collapse:separate; "
+            f"border-spacing:0 4px;'>{rows_html}</table>"
+        )
         plain = "\n".join(plain_lines)
 
     else:
-        body_html = f"<p style='font-size:13px; color:#555; margin:0;'>{details}</p>" if details else ""
+        body_html = (
+            f"<p style='font-size:13px; color:#555; margin:0;'>{details}</p>"
+            if details else ""
+        )
         plain = f"{session_name} ({location})\n{details}"
 
     html = f"<div style='{card_style}'>{header_html}{body_html}</div>"

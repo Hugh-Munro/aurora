@@ -1,72 +1,72 @@
-"date,week,day,location,session_type,session_name,details,distance_km,target_pace,target_hr_zone,sets_reps"
-"22/05/2026,1,Fri,waterford,run,Easy Run,""Easy aerobic base. HR cap 140bpm throughout — slow to a walk if it creeps above. Focus on relaxed form."",6,5:20-6:00/km,Z2,"
-"23/05/2026,1,Sat,waterford,bodyweight,Explosive & Push,""PLYOS FIRST (max intent every rep — full reset between reps): Jump squats 4x5, Broad jumps 4x3. PUSH: Pike push-ups 4x10, Dips 4x12, Diamond push-ups 3x10. CALVES: Single-leg calf raises 3x15 each (3s eccentric down)."",,,,"
-"24/05/2026,1,Sun,waterford,rest,Rest & Mobility,""Hip flexor stretch, pigeon pose, thoracic rotation, ankle circles. 15min."",,,,"
-"25/05/2026,2,Mon,waterford,run,Intervals,""WU 2km easy. 5x400m @3:40-3:50/km with 90s full walk recovery. CD 1km easy. Controlled hard effort — not a blind sprint. Form first."",5,3:40-3:50/km,Z4-Z5,"
-"26/05/2026,2,Tue,waterford,bodyweight,Explosive & Push,""PLYOS FIRST: Jump squats 4x5, Broad jumps 4x3, Single-leg hops 3x5 each (fast stiff ground contact). PUSH: Pike push-ups 4x12, Dips 4x12, Explosive push-ups 3x8. CALVES: Single-leg calf raises 3x15 each."",,,,"
-"27/05/2026,2,Wed,waterford,rest,Rest & Mobility,""Hip flexor stretch, pigeon pose, glute bridges 3x15, ankle mobility. 15min."",,,,"
-"28/05/2026,2,Thu,waterford,run,Easy Run,""Easy Z2. HR cap 140bpm. No exceptions — walk if needed."",5,5:20-6:00/km,Z2,"
-"29/05/2026,2,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 4x12 (3s eccentric each rep), Dead hangs 3x30s. CORE: Hollow body hold 3x30s, Plank 3x45s, Dead bugs 3x10 each side."",,,,"
-"30/05/2026,2,Sat,waterford,run,Long Run,""Long easy Z2. Conversational pace throughout. First long run of the block."",8,5:20-6:00/km,Z2,"
-"31/05/2026,2,Sun,waterford,rest,Rest & Mobility,""Full body stretch. Foam roll calves, hamstrings, quads. 20min."",,,,"
-"01/06/2026,3,Mon,dublin,gym,Push — Heavy,""Bench press 4x5 @82.5kg (3min rest), OHP 4x5 @52.5kg (3min rest), Incline DB press 3x10 @32kg, Cable lateral raise 3x15, Tricep pushdown 3x12, Face pulls 3x15. Log everything in Hevy."",,,,"
-"02/06/2026,3,Tue,dublin,run,Threshold,""WU 2km easy. 2x10min @4:25-4:40/km with 3min jog recovery. CD 2km. Controlled hard breathing — 3-4 words max. This is lactate threshold."",8,4:25-4:40/km,Z3-Z4,"
-"03/06/2026,3,Wed,dublin,gym,Pull — Heavy,""Hex bar deadlift 4x5 @105kg (3min rest), Weighted pull-ups 4x4 @10kg (3min rest), Barbell row 4x6 @65kg, DB hammer curl 3x12, Cable row 3x12, Face pulls 3x15. Log in Hevy."",,,,"
-"04/06/2026,3,Thu,dublin,rest,Rest & Mobility,""Hip flexor stretch, pigeon pose, thoracic extension over foam roller. 15min."",,,,"
-"05/06/2026,3,Fri,dublin,gym,Lower + Power,""BOX JUMPS FIRST 5x5 (max height — full reset between reps, no fatigue accumulation). Power clean 5x3 @62.5kg. Hip thrust 4x8 @100kg. Bulgarian split squat 3x8 each @40kg. RDL 3x10 @70kg. Single-leg calf raises 4x15 each. Log in Hevy."",,,,"
-"06/06/2026,3,Sat,dublin,run,Easy Run,""Easy Z2 recovery run after gym week. HR cap 140bpm."",6,5:20-6:00/km,Z2,"
-"07/06/2026,3,Sun,dublin,gym,Upper Power + Accessory,""Weighted dips 4x6 @12.5kg, Push press 4x4 @57.5kg, Weighted pull-ups 4x4 @12.5kg, Cable lateral raise 3x15, Pallof press 3x12 each side, Band pull-apart 3x20. Pre-holiday session — controlled effort, not to failure. Log in Hevy."",,,,"
-"08/06/2026,4,Mon,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"09/06/2026,4,Tue,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"10/06/2026,4,Wed,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"11/06/2026,4,Thu,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"12/06/2026,4,Fri,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"13/06/2026,4,Sat,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"14/06/2026,4,Sun,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"15/06/2026,5,Mon,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"16/06/2026,5,Tue,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"17/06/2026,5,Wed,holiday,rest,Rest (Holiday),No training. Enjoy the holiday.,,,,"
-"18/06/2026,5,Thu,holiday,rest,Rest (Holiday),Last day of holiday.,,,,"
-"19/06/2026,5,Fri,waterford,run,Easy Run — Return,""Very short reintroduction. 4km only. No HR targets — just feel the legs. Walk whenever. Stop early if anything feels wrong."",4,5:20-6:30/km,Z2,"
-"20/06/2026,5,Sat,waterford,bodyweight,Explosive & Push — Light,""PLYOS: Jump squats 3x3 (wake the neuromuscular system — not max effort). PUSH: Pike push-ups 3x10, Dips 3x10. PULL: Table rows 3x10. CORE: Plank 3x30s. Light session only."",,,,"
-"21/06/2026,5,Sun,waterford,rest,Rest & Mobility,""Full body stretch. Note anything tight from travel and inactivity. 20min."",,,,"
-"22/06/2026,6,Mon,waterford,bodyweight,Explosive & Push,""PLYOS FIRST (max intent): Jump squats 4x5, Broad jumps 4x3. PUSH: Pike push-ups 4x12, Dips 4x12, Diamond push-ups 3x10. CALVES: Single-leg calf raises 3x15 each."",,,,"
-"23/06/2026,6,Tue,waterford,run,Easy Run,""Easy Z2 only this week. No intensity — aerobic base reintroduction after 11 days off."",5,5:20-6:00/km,Z2,"
-"24/06/2026,6,Wed,waterford,rest,Rest & Mobility,""Hip flexor stretch, pigeon pose, ankle mobility. 15min."",,,,"
-"25/06/2026,6,Thu,waterford,run,Easy Run,""Easy Z2. Second run of return week. HR cap 140bpm."",5,5:20-6:00/km,Z2,"
-"26/06/2026,6,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 4x12 (3s eccentric), Dead hangs 3x30s. CORE: Hollow body 3x30s, Plank 3x45s, Dead bugs 3x10 each side."",,,,"
-"27/06/2026,6,Sat,waterford,run,Long Run,""Conservative first long run back. Genuinely easy — HR must stay Z2."",7,5:20-6:00/km,Z2,"
-"28/06/2026,6,Sun,waterford,rest,Rest & Mobility,""Full body stretch and foam roll. 20min."",,,,"
-"29/06/2026,7,Mon,waterford,bodyweight,Explosive & Push,""PLYOS FIRST: Jump squats 4x5, Broad jumps 4x4, Single-leg hops 3x5 each (stiff fast contact). PUSH: Pike push-ups 4x15, Dips 4x15, Diamond push-ups 3x10, Explosive push-ups 3x6. CALVES: Single-leg calf raises 3x15 each."",,,,"
-"30/06/2026,7,Tue,waterford,run,Intervals,""WU 2km. 4x500m @3:40-3:50/km with 90s full walk recovery. CD 1km. First intervals back — controlled quality. Form over pace."",5,3:40-3:50/km,Z4-Z5,"
-"01/07/2026,7,Wed,waterford,rest,Rest & Mobility,""Hip and thoracic focus. Ankle mobility. 15min."",,,,"
-"02/07/2026,7,Thu,waterford,run,Threshold,""WU 2km easy. 2x8min @4:20-4:35/km with 3min jog recovery. CD 2km. First threshold session back — 2 reps only. Controlled."",7,4:20-4:35/km,Z3-Z4,"
-"03/07/2026,7,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 4x15 (3s eccentric), Dead hangs 3x35s. CORE: Hollow body 4x30s, Plank 4x45s, L-sit progressions 3x20s, Dead bugs 3x10 each."",,,,"
-"04/07/2026,7,Sat,waterford,run,Long Run,""Easy Z2. Building back."",8,5:20-6:00/km,Z2,"
-"05/07/2026,7,Sun,waterford,rest,Rest & Mobility,""Full body stretch. 20min."",,,,"
-"06/07/2026,8,Mon,waterford,bodyweight,Explosive & Push,""PLYOS FIRST (max intent — full reset between every rep): Jump squats 5x5, Broad jumps 4x4, Depth drops 3x5 (step off ledge and react on landing — focus on stiffness). PUSH: Feet-elevated pike push-ups 4x12, Weighted dips (backpack 5-8kg) 4x8, Archer push-ups 3x6 each. CALVES: Single-leg calf raises 4x15 each (3s eccentric)."",,,,"
-"07/07/2026,8,Tue,waterford,run,Intervals,""WU 2km. 5x600m @3:40-3:50/km with 90s walk recovery. CD 1km. Step up in volume from last week."",7,3:40-3:50/km,Z4-Z5,"
-"08/07/2026,8,Wed,waterford,rest,Rest & Mobility,""Hip flexor stretch, pigeon pose, thoracic rotation, ankle mobility. 15min."",,,,"
-"09/07/2026,8,Thu,waterford,run,Threshold,""WU 2km. 3x8min @4:20-4:35/km with 2.5min jog recovery. CD 2km."",8,4:20-4:35/km,Z3-Z4,"
-"10/07/2026,8,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 5x12 (3s eccentric), Dead hangs 4x35s, Feet-elevated table rows 3x10. CORE: Hollow body 4x30s, L-sits 3x20s, Plank shoulder taps 3x20, Dead bugs 3x12 each."",,,,"
-"11/07/2026,8,Sat,waterford,run,Long Run,""Easy Z2. Add 4x20s strides at the end — relaxed fast, 90s full walk recovery between each. Not sprints."",9,5:20-6:00/km,Z2,"
-"12/07/2026,8,Sun,waterford,rest,Rest & Mobility,""Full body stretch and foam roll. 20min."",,,,"
-"13/07/2026,9,Mon,waterford,bodyweight,Explosive & Push,""PLYOS FIRST: Jump squats 5x5 max intent, Broad jumps 5x4, Reactive single-leg hops 3x6 each (minimal ground contact time — think hot coals). PUSH: Feet-elevated pike push-ups 4x15, Weighted dips 4x10, Archer push-ups 4x8 each, Explosive push-ups 3x8. CALVES: Single-leg calf raises 4x15 each (3s eccentric)."",,,,"
-"14/07/2026,9,Tue,waterford,run,Intervals — Long Reps,""WU 2km. 3x1km @3:55-4:05/km with 2.5min jog recovery. CD 1km. Shift to longer reps closer to 5k race pace. Controlled race effort."",8,3:55-4:05/km,Z4-Z5,"
-"15/07/2026,9,Wed,waterford,rest,Rest & Mobility,""Hip and glute focus. Ankle mobility. 20min."",,,,"
-"16/07/2026,9,Thu,waterford,run,Easy Run + Strides,""Easy Z2 run. Add 4x20s strides at end (90s walk recovery between each). Strides are controlled fast — relaxed aggression, not a sprint."",6,5:20-6:00/km,Z2,"
-"17/07/2026,9,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 5x15 (3s eccentric), Dead hangs 4x40s, Feet-elevated rows 3x12. CORE: L-sits 4x20s, Hollow body 4x35s, Copenhagen plank 3x20s each side, Dead bugs 3x12 each."",,,,"
-"18/07/2026,9,Sat,waterford,run,Long Run,""Easy Z2. Add 4x20s strides at end."",11,5:20-6:00/km,Z2,"
-"19/07/2026,9,Sun,waterford,rest,Rest & Mobility,""Full body stretch. 20min."",,,,"
-"20/07/2026,10,Mon,waterford,bodyweight,Explosive & Push — Peak,""PLYOS FIRST (peak power — maximum intent every rep, full reset, zero fatigue accumulation): Jump squats 5x5, Broad jumps 5x4, Reactive single-leg hops 3x8 each, Depth drops 3x5. PUSH: Weighted pike push-ups 4x15 (feet elevated), Weighted dips 4x10, Archer push-ups 4x10 each. CALVES: Single-leg calf raises 4x15 each (3s eccentric)."",,,,"
-"21/07/2026,10,Tue,waterford,run,Intervals — Peak,""WU 2km. 5x800m @3:50-4:00/km with 90s jog recovery. CD 1km. Peak interval session. Each rep should feel like a controlled race."",10,3:50-4:00/km,Z4-Z5,"
-"22/07/2026,10,Wed,waterford,rest,Rest & Mobility,""Full rest. Hip, thoracic and ankle focus. 15min."",,,,"
-"23/07/2026,10,Thu,waterford,run,Threshold — Peak,""WU 2km. 4x8min @4:15-4:30/km with 90s jog recovery. CD 2km. Peak threshold session. This pace is your 5k aerobic support system."",10,4:15-4:30/km,Z3-Z4,"
-"24/07/2026,10,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 5x15, Dead hangs 5x40s, Feet-elevated rows 3x15. CORE: L-sits 4x25s, Hollow body 4x40s, Copenhagen plank 4x20s each, Dead bugs 4x12 each."",,,,"
-"25/07/2026,10,Sat,waterford,run,Long Run,""Easy Z2. Add 4x20s strides at end. Longest run of the plan."",12,5:20-6:00/km,Z2,"
-"26/07/2026,10,Sun,waterford,rest,Rest & Mobility,""Full body stretch and foam roll. 20min."",,,,"
-"27/07/2026,11,Mon,waterford,bodyweight,Explosive & Push,""PLYOS FIRST: Jump squats 5x5, Broad jumps 5x4, Reactive single-leg hops 3x8 each, Depth drops 3x5. PUSH: Weighted pike push-ups 4x15, Weighted dips 4x10, Archer push-ups 4x10 each. CALVES: Single-leg calf raises 4x15 each."",,,,"
-"28/07/2026,11,Tue,waterford,run,Easy Run,""Easy Z2. Active recovery before extended threshold."",6,5:20-6:00/km,Z2,"
-"29/07/2026,11,Wed,waterford,run,Threshold — Extended,""WU 2km. 2x15min @4:15-4:30/km with 3min jog recovery. CD 2km. Longest threshold session of the plan — extended sustained effort is the primary 5k aerobic signal."",11,4:15-4:30/km,Z3-Z4,"
-"30/07/2026,11,Thu,waterford,rest,Rest & Mobility,""Full rest and recovery. Hip flexor stretch, pigeon pose, foam roll. 20min."",,,,"
-"31/07/2026,11,Fri,waterford,bodyweight,Pull & Core,""PULL: Table rows 5x15, Dead hangs 5x45s, Feet-elevated rows 3x15. CORE: L-sits 4x25s, Hollow body 4x40s, Copenhagen plank 4x25s each, Dead bugs 4x12 each."",,,,"
+date,week,day,location,session_type,session_name,details,distance_km,target_pace,target_hr_zone,sets_reps
+2026-05-22,1,Fri,waterford,run,Easy Run,Easy conversational pace. Focus on form and feel after irregular period.,6,5:40-6:00/km,Z2,
+2026-05-23,1,Sat,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 4x10, Dips 4x12, Table rows 4x12, Pistol squat progressions 3x6 each, Plank 3x45s, Hollow body hold 3x30s",,,,
+2026-05-24,1,Sun,waterford,rest,Rest & Mobility,"Hip flexor stretch, pigeon pose, glute activation 15min",,,,
+2026-05-25,2,Mon,waterford,run,Intervals,WU 2km easy. 5x400m @3:45/km with 90s walk recovery. CD 1km easy.,5,3:45/km,Z4,
+2026-05-26,2,Tue,waterford,bodyweight,Bodyweight Push,"Pike push ups 4x12, Dips 4x12, Diamond push ups 3x10, Shoulder taps 3x20, Core circuit 3 rounds",,,,
+2026-05-27,2,Wed,waterford,rest,Rest & Mobility,"Hip flexor stretch, pigeon pose 15min",,,,
+2026-05-28,2,Thu,waterford,bodyweight,Bodyweight Pull,"Table rows 4x12, Dead hangs 3x30s, Plank 3x45s, Hollow body 3x30s",,,,
+2026-05-29,2,Fri,waterford,run,Easy Run,Easy conversational run.,5,5:40-6:00/km,Z2,
+2026-05-30,2,Sat,waterford,run,Long Run,Long slow conversational run. No pressure on pace.,6,5:40-6:00/km,Z2,
+2026-05-31,2,Sun,waterford,rest,Rest & Mobility,"Full body stretch, foam roll hips and quads 20min",,,,
+2026-06-01,3,Mon,dublin,gym,Push,"Bench press 4x6 @70kg, OHP 4x6 @45kg, Incline DB press 3x10 @30kg, Cable lateral raise 3x12, Tricep pushdown 3x12, Face pulls 3x15",,,,
+2026-06-02,3,Tue,dublin,run,Threshold,WU 2km easy. 2x8min @4:30-4:45/km with 3min jog recovery. CD 2km easy.,8,4:30-4:45/km,Z3-Z4,
+2026-06-03,3,Wed,dublin,gym,Pull,"Hex bar deadlift 4x5 @80kg, Barbell row 4x8 @50kg, Weighted pull ups 4x4 @5kg, DB curl 3x12, Cable row 3x12",,,,
+2026-06-04,3,Thu,dublin,rest,Rest & Mobility,"Hip flexor stretch, pigeon pose 15min",,,,
+2026-06-05,3,Fri,dublin,gym,Legs,"Hip thrust 4x8 @80kg, Bulgarian split squat 3x8 @40kg each, RDL 3x10 @60kg, Step ups 3x10 @20kg, Calf raises 3x15",,,,
+2026-06-06,3,Sat,dublin,run,Easy Run,Easy recovery run. Keep it conversational.,6,5:40-6:00/km,Z2,
+2026-06-07,3,Sun,dublin,gym,Full Body,"Power clean 5x3 @60kg, Weighted dips 4x6 @10kg, Box jumps 4x5, Hex bar pogo 3x8, Lat pulldown 3x10 @50kg, Pallof press 3x12",,,,
+2026-06-08,4,Mon,holiday,run,Easy Run,Easy run. Enjoy the holiday. No pressure.,5,5:40-6:00/km,Z2,
+2026-06-09,4,Tue,holiday,bodyweight,Bodyweight Full Body,"Pike push ups 4x10, Dips 4x12, Table rows 4x12, Pistol squat progressions 3x6 each, Plank 3x45s, Hollow body hold 3x30s",,,,
+2026-06-10,4,Wed,holiday,rest,Rest & Mobility,"Hip flexor stretch, pigeon pose 15min",,,,
+2026-06-11,4,Thu,holiday,run,Intervals,WU 1.5km easy. 5x400m @3:45/km hard effort. CD 1km easy.,5,3:45/km,Z4,
+2026-06-12,4,Fri,holiday,bodyweight,Bodyweight Push,"Pike push ups 4x12, Dips 4x15, Table rows 4x15, Diamond push ups 3x10, Dead hangs 3x30s, Core circuit 3 rounds",,,,
+2026-06-13,4,Sat,holiday,run,Long Run,Longest run of the holiday block. Easy pace.,8,5:40-6:00/km,Z2,
+2026-06-14,4,Sun,holiday,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-06-15,5,Mon,holiday,run,Easy Run,Easy run.,5,5:40-6:00/km,Z2,
+2026-06-16,5,Tue,holiday,bodyweight,Bodyweight Full Body,"Pike push ups 4x12, Dips 4x15, Table rows 4x15, Pistol squat progressions 3x8, Jump squats 3x10, Plank variations 3x45s",,,,
+2026-06-17,5,Wed,holiday,rest,Rest & Mobility,Hip and glute focus stretching 15min,,,,
+2026-06-18,5,Thu,waterford,run,Threshold,WU 2km easy. 2x10min @4:30-4:45/km with 3min jog. CD 2km easy.,8,4:30-4:45/km,Z3-Z4,
+2026-06-19,5,Fri,waterford,bodyweight,Bodyweight Push,"Pike push ups 4x15, Dips 4x15, Diamond push ups 3x12, Shoulder taps 3x20, Core circuit 3 rounds",,,,
+2026-06-20,5,Sat,waterford,run,Long Run,Easy long run building back up post holiday.,9,5:40-6:00/km,Z2,
+2026-06-21,5,Sun,waterford,rest,Rest & Mobility,Full body stretch and foam roll 20min,,,,
+2026-06-22,6,Mon,waterford,bodyweight,Bodyweight Pull,"Table rows 4x15, Dead hangs 3x45s, Plank 3x60s, Hollow body 3x30s",,,,
+2026-06-23,6,Tue,waterford,run,Intervals,WU 2km. 6x600m @3:50/km with 90s recovery. CD 1km.,8,3:50/km,Z4,
+2026-06-24,6,Wed,waterford,rest,Rest & Mobility,Hip flexor and glute focus 15min,,,,
+2026-06-25,6,Thu,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 4x15, Dips 4x15, Pistol squats 3x8, Jump squats 3x10, Table rows 4x15, Core circuit",,,,
+2026-06-26,6,Fri,waterford,run,Easy Run,Easy conversational run.,6,5:40-6:00/km,Z2,
+2026-06-27,6,Sat,waterford,run,Long Run,Weekly long run.,10,5:40-6:00/km,Z2,
+2026-06-28,6,Sun,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-06-29,7,Mon,waterford,bodyweight,Bodyweight Push,"Pike push ups 5x15, Dips 5x15, Diamond push ups 3x15, Archer push ups 3x8 each, Core circuit",,,,
+2026-06-30,7,Tue,waterford,run,Threshold,WU 2km. 3x8min @4:30-4:45/km with 2min jog. CD 2km.,9,4:30-4:45/km,Z3-Z4,
+2026-07-01,7,Wed,waterford,rest,Rest & Mobility,Hip and thoracic focus 15min,,,,
+2026-07-02,7,Thu,waterford,bodyweight,Bodyweight Pull,"Table rows 5x15, Dead hangs 3x60s, Plank 3x60s, Hollow body 3x45s, L-sit progressions 3x20s",,,,
+2026-07-03,7,Fri,waterford,run,Intervals,WU 2km. 5x800m @3:50/km with 2min recovery. CD 1km.,9,3:50/km,Z4,
+2026-07-04,7,Sat,waterford,run,Long Run,Weekly long run.,11,5:40-6:00/km,Z2,
+2026-07-05,7,Sun,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-07-06,8,Mon,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 5x15, Dips 5x18, Pistol squats 3x10, Table rows 5x15, Jump squats 3x12, Core circuit",,,,
+2026-07-07,8,Tue,waterford,run,Easy Run,Easy recovery run.,6,5:40-6:00/km,Z2,
+2026-07-08,8,Wed,waterford,bodyweight,Bodyweight Push,"Pike push ups 5x18, Dips 5x18, Diamond push ups 4x12, Archer push ups 3x10, Core circuit",,,,
+2026-07-09,8,Thu,waterford,run,Threshold,WU 2km. 3x10min @4:30-4:45/km with 2min jog. CD 2km.,10,4:30-4:45/km,Z3-Z4,
+2026-07-10,8,Fri,waterford,rest,Rest & Mobility,Hip and glute focus 15min,,,,
+2026-07-11,8,Sat,waterford,run,Long Run,Weekly long run.,12,5:40-6:00/km,Z2,
+2026-07-12,8,Sun,waterford,bodyweight,Bodyweight Pull,"Table rows 5x18, Dead hangs 4x60s, Plank 4x60s, Hollow body 4x45s",,,,
+2026-07-13,9,Mon,waterford,run,Intervals,WU 2km. 6x800m @3:50/km with 90s recovery. CD 1km.,10,3:50/km,Z4,
+2026-07-14,9,Tue,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 5x18, Dips 5x20, Pistol squats 3x12, Table rows 5x18, Jump squats 3x12, Core circuit",,,,
+2026-07-15,9,Wed,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-07-16,9,Thu,waterford,run,Easy Run,Easy conversational run.,7,5:40-6:00/km,Z2,
+2026-07-17,9,Fri,waterford,bodyweight,Bodyweight Push,"Pike push ups 5x20, Dips 5x20, Archer push ups 4x10, Diamond push ups 4x15, Core circuit",,,,
+2026-07-18,9,Sat,waterford,run,Long Run,Weekly long run.,12,5:40-6:00/km,Z2,
+2026-07-19,9,Sun,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-07-20,10,Mon,waterford,bodyweight,Bodyweight Pull,"Table rows 5x20, Dead hangs 4x60s, Plank 4x75s, Hollow body 4x45s, L-sit progressions",,,,
+2026-07-21,10,Tue,waterford,run,Threshold,WU 2km. 4x8min @4:30-4:45/km with 90s jog. CD 2km.,10,4:30-4:45/km,Z3-Z4,
+2026-07-22,10,Wed,waterford,rest,Rest & Mobility,Hip and glute focus 15min,,,,
+2026-07-23,10,Thu,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 5x20, Dips 5x20, Pistol squats 4x12, Table rows 5x20, Jump squats 4x10, Core circuit",,,,
+2026-07-24,10,Fri,waterford,run,Intervals,WU 2km. 4x1km @3:50/km with 2min recovery. CD 1km.,8,3:50/km,Z4,
+2026-07-25,10,Sat,waterford,run,Long Run,Weekly long run.,13,5:40-6:00/km,Z2,
+2026-07-26,10,Sun,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-07-27,11,Mon,waterford,run,Easy Run,Easy recovery run.,6,5:40-6:00/km,Z2,
+2026-07-28,11,Tue,waterford,bodyweight,Bodyweight Full Body,"Pike push ups 5x20, Dips 5x22, Pistol squats 4x12, Table rows 5x20, Jump squats 4x12, Core circuit",,,,
+2026-07-29,11,Wed,waterford,run,Threshold,WU 2km. 2x15min @4:30-4:45/km with 3min jog. CD 2km.,11,4:30-4:45/km,Z3-Z4,
+2026-07-30,11,Thu,waterford,rest,Rest & Mobility,Full body stretch 20min,,,,
+2026-07-31,11,Fri,waterford,bodyweight,Bodyweight Push,"Pike push ups 5x22, Dips 5x22, Archer push ups 4x12, Diamond push ups 4x15, Core circuit",,,,

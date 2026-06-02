@@ -1,9 +1,5 @@
-requests
-python-dotenv
-google-genai
 pandas
-openpyxl
+numpy
+requests
 yfinance
 pdfplumber
-requests
-numpy

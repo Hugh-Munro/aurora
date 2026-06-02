@@ -1,6 +1,17 @@
+# Python
 __pycache__/
-.ipynb_checkpoints/
 *.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Environment
 .env
+
+# Sensitive data
+data/portfolio.csv
+data/passages/.passages_cache.json
+
+# Project folders to exclude
 archive/
-strava_tokens.json
+.vscode/
