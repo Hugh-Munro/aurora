@@ -280,8 +280,8 @@ def attribution_bars(attribution: dict) -> str:
         max(abs(d["pnl_pct"]) for d in attribution.values()),
         0.5,
     )
-    max_h              = 90
-    MIN_BAR_FOR_LABEL  = 20
+    max_h             = 90
+    MIN_BAR_FOR_LABEL = 20
     pos_cells:   list[str] = []
     neg_cells:   list[str] = []
     label_cells: list[str] = []
@@ -290,7 +290,8 @@ def attribution_bars(attribution: dict) -> str:
         pct     = d["pnl_pct"]
         pnl_eur = d["pnl_eur"]
         colour  = RED if pct < 0 else ASSET_CLASS_COLOURS.get(ac, GREEN)
-        h       = max(3, round(abs(pct) / max_abs * max_h))
+        is_zero = abs(pct) < 0.005
+        h       = 0 if is_zero else max(3, round(abs(pct) / max_abs * max_h))
 
         sign_pct = "+" if pct     >= 0 else "-"
         sign_eur = "+" if pnl_eur >= 0 else "-"
@@ -307,7 +308,16 @@ def attribution_bars(attribution: dict) -> str:
             f"</td>"
         )
 
-        if pct >= 0:
+        if is_zero:
+            pos_cells.append(
+                f"<td style='width:33%;padding:0 6px;vertical-align:bottom;'>"
+                f"<div style='height:{max_h}px;font-size:1px;line-height:1px;'>&nbsp;</div>"
+                f"</td>"
+            )
+            neg_cells.append(
+                f"<td style='width:33%;padding:0 6px;height:1px;'>&nbsp;</td>"
+            )
+        elif pct >= 0:
             pos_cells.append(
                 f"<td style='vertical-align:bottom;text-align:center;"
                 f"padding:0 6px;width:33%;'>"
@@ -363,7 +373,6 @@ def attribution_bars(attribution: dict) -> str:
         f"<tr>{''.join(label_cells)}</tr>"
         f"</table>"
     )
-
 
 # =============================================================================
 # PUBLIC ENTRY POINT
@@ -458,12 +467,12 @@ def build_portfolio_html() -> str:
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:18px;">
     <tr>
       <td style="vertical-align:top;">
-        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.08em;text-transform:uppercase;">Portfolio NAV</p>
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.08em;text-transform;">Portfolio NAV</p>
         <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:{INK};margin:0 0 4px 0;">&euro;{nav_today:,.2f}</p>
         <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:{_pc(daily_pnl)};background:{pnl_bg};padding:2px 8px;border-radius:20px;">{_sign(daily_pnl)}&euro;{daily_pnl:,.2f} ({_sign(daily_pct)}{daily_pct:.2f}%) yesterday</span>
       </td>
       <td style="vertical-align:top;text-align:right;width:120px;">
-        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.04em;text-transform:uppercase;">Drawdown</p>
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.04em;text-transform;">Drawdown</p>
         <p style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:{_pc(drawdown)};margin:0;">{drawdown:.2f}%</p>
       </td>
     </tr>
@@ -471,18 +480,18 @@ def build_portfolio_html() -> str:
   <!-- metric boxes: 2x2 grid -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:18px;">
     <tr>
-      {_metric_cell("ITD RETURN", f"{_sign(itd_pct)}{itd_pct:.2f}%", _pc(itd_pct))}
+      {_metric_cell("ITD Return", f"{_sign(itd_pct)}{itd_pct:.2f}%", _pc(itd_pct))}
       {_metric_cell("YTD", f"{_sign(ytd_pct)}{ytd_pct:.2f}%", _pc(ytd_pct))}
     </tr>
     <tr>
-      {_metric_cell("REALISED VOL", f"{vol:.2f}%")}
-      {_metric_cell("SHARPE 252d", f"{sharpe:.2f}")}
+      {_metric_cell("Realised Vol", f"{vol:.2f}%")}
+      {_metric_cell("Sharpe 252d", f"{sharpe:.2f}")}
     </tr>
   </table>
   <!-- attribution -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;border-top:1px solid #f0f0f0;">
     <tr><td style="padding-top:14px;">
-        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">Asset Class Attribution</p>
+        <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 12px 0;letter-spacing:0.08em;text-transform;">Asset Class Attribution</p>
       {attrib}
     </td></tr>
   </table>
