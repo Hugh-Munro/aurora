@@ -6,7 +6,7 @@ All the information you need to start your day with direction and purpose
 
 <p align="center">
   <img
-    src="public/preview.png"
+    src="public/preview_2.png"
     alt="Aurora daily email preview"
     width="900"
     style="border: 1px solid #dde0e4; border-radius: 6px;"
