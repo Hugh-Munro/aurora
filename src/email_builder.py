@@ -202,10 +202,10 @@ def _build_html(
     )
 
     parts.append(
-        "<div style='margin-top:20px;text-align:center;padding-bottom:8px;'>"
-        "<img src='https://hugomunro123.github.io/aurora/aurora_footer.png' "
-        "width='140' height='22' alt='' style='display:block;margin:0 auto 8px;'/>"
-        "<p style='font-family:Arial,sans-serif;font-size:10px;color:#888;"
+        "<div style='padding:2rem 0 0.5rem;text-align:center;'>"
+        "<div style='width:5px;height:5px;border-radius:50%;background:#0F6E56;"
+        "margin:0 auto 6px;'></div>"
+        "<p style='font-family:Arial,sans-serif;font-size:11px;color:#888;"
         "letter-spacing:0.1em;'>Aurora</p>"
         "</div>"
     )
