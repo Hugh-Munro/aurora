@@ -15,8 +15,6 @@ from datetime import date
 from email.message import EmailMessage
 from html import escape as html_escape
 
-from google import genai
-
 from src.config import Config, GREEN
 from src.quote import Quote
 from src.weather import get_weather_icon
