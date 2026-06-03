@@ -134,7 +134,7 @@ def _build_html(
 
     parts.append(
         "<div style='max-width:600px; margin:0 auto; padding:1rem; "
-        "font-family:Arial,sans-serif;'>"
+        "font-family:Arial,sans-serif; background:#e8e7e3; border-radius:16px;'>"
     )
 
     # -- Header ---------------------------------------------------------------
@@ -159,19 +159,19 @@ def _build_html(
         )
 
     parts.append(
-        "<div style='background:#ffffff; border:0.5px solid #e0e0e0; "
-        "border-radius:12px; padding:1.5rem; margin-bottom:12px;'>"
-        "<table style='width:100%; border-collapse:collapse;'><tr>"
-        "<td style='vertical-align:bottom;'>"
-        f"<p style='font-size:11px; color:#888; margin:0 0 6px 0;'>"
-        f"{today.strftime('%A')}, {today.day} {today.strftime('%B %Y')}</p>"
-        f"<p style='font-size:22px; font-weight:700; color:#1a1a1a; "
-        f"line-height:1.25; margin:0;'>{html_escape(greeting)}</p>"
-        "</td>"
-        f"{weather_right}"
-        "</tr></table>"
-        "</div>"
-    )
+            "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);border-radius:12px;padding:1.5rem;margin-bottom:12px;"
+            "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
+            "<table style='width:100%; border-collapse:collapse;'><tr>"
+            "<td style='vertical-align:bottom;'>"
+            f"<p style='font-size:11px; color:#888; margin:0 0 6px 0;'>"
+            f"{today.strftime('%A')}, {today.day} {today.strftime('%B %Y')}</p>"
+            f"<p style='font-size:22px; font-weight:700; color:#1a1a1a !important; "
+            f"line-height:1.25; margin:0;'>{html_escape(greeting)}</p>"
+            "</td>"
+            f"{weather_right}"
+            "</tr></table>"
+            "</div>"
+        )
 
     # -- Portfolio ------------------------------------------------------------
     parts.append(portfolio_html)
@@ -189,17 +189,17 @@ def _build_html(
     )
     
     parts.append(
-        "<div style='background:#ffffff; border:0.5px solid #e0e0e0; "
-        "border-radius:12px; padding:1.25rem 1.5rem;'>"
-        "<div style='height:30px; overflow:hidden; margin-bottom:10px;'>"
-        f"<p style='font-family:Georgia,serif; font-size:48px; line-height:1; "
-        f"color:{GREEN}; margin:0;'>&ldquo;</p>"
-        "</div>"
-        "<p style='font-family:Georgia,serif; font-size:15px; line-height:1.75; "
-        f"font-style:italic; color:#1a1a1a; margin:0 0 14px 0;'>{html_escape(pretty)}</p>"
-        f"{attribution}"
-        "</div>"
-    )
+            "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);border-radius:12px;padding:1.25rem 1.5rem;"
+            "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
+            "<div style='height:30px;overflow:hidden;margin-bottom:10px;'>"
+            f"<p style='font-family:Georgia,serif;font-size:48px;line-height:1;"
+            f"color:{GREEN};margin:0;'>&ldquo;</p>"
+            "</div>"
+            "<p style='font-family:Georgia,serif; font-size:15px; line-height:1.75; "
+            f"font-style:italic; color:#1a1a1a !important; margin:0 0 14px 0;'>{html_escape(pretty)}</p>"
+            f"{attribution}"
+            "</div>"
+        )
 
     parts.append(
         "<div style='padding:2rem 0 0.5rem;text-align:center;'>"

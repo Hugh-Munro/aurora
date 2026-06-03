@@ -108,11 +108,11 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
     )
 
     card_style = (
-        "background:#ffffff; "
-        "border:1px solid #e0e0e0; "
-        "border-radius:12px; "
-        "padding:20px; "
-        "margin-bottom:16px;"
+        "background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);"
+        "border-radius:12px;"
+        "padding:20px;"
+        "margin-bottom:12px;"
+        "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);"
     )
 
     # -- Body by session type -------------------------------------------------
@@ -168,10 +168,11 @@ def format_plan_for_email(row: dict | None) -> tuple[str, str]:
             display_right = f"{sets_reps} {weight}".strip()
             rows_html += (
                 "<tr>"
-                f"<td style='font-size:13px; color:#1a1a1a; padding:8px 10px; "
-                f"background:#f7f7f5; border-radius:6px;'>{ex_name}</td>"
-                f"<td style='font-size:13px; color:#666; font-weight:500; padding:8px 10px; "
-                f"text-align:right; background:#f7f7f5; border-radius:6px;'>{display_right}</td>"
+                f"<td style='padding:6px 6px 6px 8px;background:#f0efeb;border-radius:8px 0 0 8px;width:60%;'>"
+                f"<span style='font-size:13px;color:#1a1a1a;font-weight:500;background:#d8d6d1;"
+                f"border-radius:6px;padding:4px 10px;display:inline-block;'>{ex_name}</span></td>"
+                f"<td style='font-size:13px;color:#666;font-weight:500;padding:6px 10px 6px 6px;"
+                f"text-align:right;background:#f0efeb;border-radius:0 8px 8px 0;'>{display_right}</td>"
                 "</tr>"
                 "<tr><td colspan='2' style='height:4px;'></td></tr>"
             )

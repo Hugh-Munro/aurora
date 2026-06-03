@@ -263,7 +263,8 @@ def _metric_cell(label: str, value: str, colour: str = INK) -> str:
     """One stat box, as a table cell. Used in a 2x2 grid."""
     return (
         f"<td style='width:50%;padding:3px;'>"
-        f"<div style='background:{CARD_BG};border-radius:8px;padding:10px;'>"
+        f"<div style='background:#f0efeb;border-radius:8px;padding:10px;"
+        f"box-shadow:0 1px 3px rgba(0,0,0,0.07) inset,0 1px 0 rgba(255,255,255,0.8);'>"
         f"<p style='font-family:Arial,sans-serif;font-size:10px;color:{MUTE};"
         f"margin:0 0 3px 0;letter-spacing:0.04em;'>{label}</p>"
         f"<p style='font-family:Arial,sans-serif;font-size:16px;font-weight:bold;"
@@ -462,13 +463,13 @@ def build_portfolio_html() -> str:
 
         return f"""{warn}<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:16px;">
 <tr><td>
-<div style="background:#ffffff;border:1px solid #e0e0e0;border-radius:12px;padding:20px;">
+<div style="background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);border-radius:12px;padding:20px;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);">
   <!-- NAV header row -->
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;margin-bottom:18px;">
     <tr>
       <td style="vertical-align:top;">
         <p style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};margin:0 0 2px 0;letter-spacing:0.08em;text-transform;">Portfolio NAV</p>
-        <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:{INK};margin:0 0 4px 0;">&euro;{nav_today:,.2f}</p>
+        <p style="font-family:Arial,sans-serif;font-size:24px;font-weight:bold;color:#1a1a1a !important;margin:0 0 4px 0;">&euro;{nav_today:,.2f}</p>
         <span style="font-family:Arial,sans-serif;font-size:12px;font-weight:bold;color:{_pc(daily_pnl)};background:{pnl_bg};padding:2px 8px;border-radius:20px;">{_sign(daily_pnl)}&euro;{daily_pnl:,.2f} ({_sign(daily_pct)}{daily_pct:.2f}%) yesterday</span>
       </td>
       <td style="vertical-align:top;text-align:right;width:120px;">
