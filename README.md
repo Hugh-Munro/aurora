@@ -1,6 +1,6 @@
 # Aurora
 
-All the information you need to start your day with direction and purpose
+Personalised daily briefing
 
 <br>
 
@@ -19,4 +19,4 @@ All the information you need to start your day with direction and purpose
 
 ## Overview
 
-A personal daily briefing system delivered by email every morning. Aggregates portfolio performance, training schedule, a curated quote, and local weather into a single, cleanly formatted HTML email, automated via GitHub Actions.
+I started this project as an automatic quote sender in order to automate one of my quasi-daily tasks during my internship. I realised it could also double as a way to present other useful information. Even more importantly it gave me a great device to feel productive while not actually achieving anything while studying. The latest version covers portfolio performance, weather, training plan updates and the original daily quote.
