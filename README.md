@@ -1,6 +1,6 @@
 # Aurora
 
-Personalised daily briefing
+Personalised daily briefing email
 
 <br>
 
