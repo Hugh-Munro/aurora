@@ -138,11 +138,13 @@ def _build_html(
     # -- Header ---------------------------------------------------------------
     weather_icon = get_weather_icon(weather_str)
     weather_right = ""
+
     if weather_str:
-        # Split "Heavy drizzle — 14–18°C, 1.0mm rain" into description and detail
-        parts_w      = weather_str.split(" — ", 1)
+        # Split "Heavy drizzle — 14–18°C, 1.0mm rain"
+        parts_w = weather_str.split(" — ", 1)
         weather_desc = parts_w[0].strip()
         weather_detail = parts_w[1].strip() if len(parts_w) > 1 else ""
+
         weather_right = (
             "<td style='vertical-align:bottom; text-align:right; width:120px;'>"
             f"<p style='font-size:20px; line-height:1; margin:0;'>{weather_icon}</p>"
@@ -157,22 +159,44 @@ def _build_html(
         )
 
     parts.append(
-            "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);border-radius:12px;padding:1.5rem;margin-bottom:12px;"
-            "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
-            "<table style='width:100%; border-collapse:collapse;'><tr>"
-            "<td style='vertical-align:bottom;'>"
-            f"<p style='font-size:11px; color:#888; margin:0 0 6px 0;'>"
-            f"{today.strftime('%A')}, {today.day} {today.strftime('%B %Y')}</p>"
-            f"<p style='font-size:22px; font-weight:700; color:#1a1a1a !important; "
-            f"line-height:1.25; margin:0;'>{html_escape(greeting)}</p>"
-            "</td>"
-            f"{weather_right}"
-            "</tr></table>"
-            "</div>"
-        )
+        "<a href='https://www.met.ie/' "
+        "target='_blank' "
+        "style='text-decoration:none; color:inherit; display:block;'>"
+
+        "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);"
+        "border-radius:12px;"
+        "padding:1.5rem;"
+        "margin-bottom:12px;"
+        "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
+
+        "<table style='width:100%; border-collapse:collapse;'>"
+        "<tr>"
+
+        "<td style='vertical-align:bottom;'>"
+        f"<p style='font-size:11px; color:#888; margin:0 0 6px 0;'>"
+        f"{today.strftime('%A')}, {today.day} {today.strftime('%B %Y')}</p>"
+
+        f"<p style='font-size:22px; font-weight:700; color:#1a1a1a;"
+        f"line-height:1.25; margin:0;'>"
+        f"{html_escape(greeting)}</p>"
+        "</td>"
+
+        f"{weather_right}"
+
+        "</tr>"
+        "</table>"
+        "</div>"
+        "</a>"
+    )
 
     # -- Portfolio ------------------------------------------------------------
-    parts.append(portfolio_html)
+    parts.append(
+        "<a href='https://orbis-rust.vercel.app/' "
+        "target='_blank' "
+        "style='text-decoration:none; color:inherit; display:block;'>"
+        f"{portfolio_html}"
+        "</a>"
+    )
 
     # -- Workout --------------------------------------------------------------
     parts.append(workout_html)
