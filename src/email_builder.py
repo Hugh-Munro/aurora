@@ -210,18 +210,31 @@ def _build_html(
         f"\u2014 <em>{html_escape(q.title)}</em></p>"
     )
     
+    # -- Quote ----------------------------------------------------------------
     parts.append(
-            "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);border-radius:12px;padding:1.25rem 1.5rem;"
-            "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
-            "<div style='height:30px;overflow:hidden;margin-bottom:10px;'>"
-            f"<p style='font-family:Georgia,serif;font-size:48px;line-height:1;"
-            f"color:{GREEN};margin:0;'>&ldquo;</p>"
-            "</div>"
-            "<p style='font-family:Georgia,serif; font-size:15px; line-height:1.75; "
-            f"font-style:italic; color:#1a1a1a !important; margin:0 0 14px 0;'>{html_escape(pretty)}</p>"
-            f"{attribution}"
-            "</div>"
-        )
+        "<a href='https://encore-iota.vercel.app/' "
+        "target='_blank' "
+        "style='text-decoration:none; color:inherit; display:block;'>"
+
+        "<div style='background:linear-gradient(180deg,#ffffff 0%,#edecea 100%);"
+        "border-radius:12px;padding:1.25rem 1.5rem;"
+        "box-shadow:0 2px 4px rgba(0,0,0,0.06),0 8px 20px rgba(0,0,0,0.08);'>"
+
+        "<div style='height:30px;overflow:hidden;margin-bottom:10px;'>"
+        f"<p style='font-family:Georgia,serif;font-size:48px;line-height:1;"
+        f"color:{GREEN};margin:0;'>&ldquo;</p>"
+        "</div>"
+
+        "<p style='font-family:Georgia,serif;font-size:15px;line-height:1.75;"
+        "font-style:italic;color:#1a1a1a !important;margin:0 0 14px 0;'>"
+        f"{html_escape(pretty)}"
+        "</p>"
+
+        f"{attribution}"
+
+        "</div>"
+        "</a>"
+    )
 
     parts.append(
         "<div style='padding:2rem 0 0.5rem;text-align:center;'>"
