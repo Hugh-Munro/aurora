@@ -46,7 +46,7 @@ def main() -> int:
         q=q,
     )
     send_email(cfg, subject, body_text, body_html)
-
+    
     return 0
 
 

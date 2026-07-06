@@ -199,7 +199,13 @@ def _build_html(
     )
 
     # -- Workout --------------------------------------------------------------
-    parts.append(workout_html)
+    parts.append(
+        "<a href='https://www.strava.com/athlete/calendar' "
+        "target='_blank' "
+        "style='text-decoration:none; color:inherit; display:block;'>"
+        f"{workout_html}"
+        "</a>"
+    )
 
     # -- Quote ----------------------------------------------------------------
     attribution = (
